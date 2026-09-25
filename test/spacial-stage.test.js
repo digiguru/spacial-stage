@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import {
-  buildPushFrames,
+  buildLayoutFrames,
   buildTransitionFrames,
   motionMarkup,
   normaliseSpec,
@@ -58,8 +58,9 @@ test("reveal clips from the requested edge", () => {
   assert.equal(to.clipPath, "inset(0% 0% 0% 0%)");
 });
 
-test("push moves surrounding content opposite the entering edge", () => {
-  const [, to] = buildPushFrames({
+test("push is a layout effect separate from transition style", () => {
+  const [, to] = buildLayoutFrames({
+    layout: "push",
     direction: "left",
     distance: 200
   });
@@ -67,10 +68,15 @@ test("push moves surrounding content opposite the entering edge", () => {
   assert.match(to.transform, /translate3d\(88px, 0px, 0\)/);
 });
 
+test("overlay does not move neighbouring layout", () => {
+  assert.equal(buildLayoutFrames({ layout: "overlay" }), null);
+});
+
 test("creates declarative markup for every taxonomy axis", () => {
   const markup = motionMarkup({
     role: "panel",
-    transition: "push",
+    transition: "reveal",
+    layout: "push",
     attachment: "dock",
     coordination: "follow",
     depth: "foreground",
@@ -78,7 +84,8 @@ test("creates declarative markup for every taxonomy axis", () => {
   });
 
   assert.match(markup, /data-stage-role="panel"/);
-  assert.match(markup, /data-stage-transition="push"/);
+  assert.match(markup, /data-stage-transition="reveal"/);
+  assert.match(markup, /data-stage-layout="push"/);
   assert.match(markup, /data-stage-attachment="dock"/);
   assert.match(markup, /data-stage-coordination="follow"/);
   assert.match(markup, /data-stage-depth="foreground"/);
