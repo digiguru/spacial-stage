@@ -24,6 +24,9 @@ export const DEFAULT_SPEC = Object.freeze({
   positionMode: "absolute",
   positionX: 0,
   positionY: 0,
+  sizeMode: "natural",
+  sizeWidth: 0,
+  sizeHeight: 0,
   distance: 180,
   duration: 700,
   stagger: 80,
@@ -57,6 +60,9 @@ export function normaliseSpec(input = {}) {
     positionMode: input.positionMode === "percent" ? "percent" : "absolute",
     positionX: finiteNumber(input.positionX, finiteNumber(input.offsetX, DEFAULT_SPEC.positionX)),
     positionY: finiteNumber(input.positionY, finiteNumber(input.offsetY, DEFAULT_SPEC.positionY)),
+    sizeMode: normaliseSizeMode(input.sizeMode),
+    sizeWidth: finiteNumber(input.sizeWidth, DEFAULT_SPEC.sizeWidth),
+    sizeHeight: finiteNumber(input.sizeHeight, DEFAULT_SPEC.sizeHeight),
     distance: finiteNumber(input.distance, DEFAULT_SPEC.distance),
     duration: finiteNumber(input.duration, DEFAULT_SPEC.duration),
     stagger: finiteNumber(input.stagger, DEFAULT_SPEC.stagger),
@@ -112,9 +118,84 @@ export function resolveDepth(specInput = {}) {
   };
 }
 
+export function captureNaturalSize(element) {
+  if (!element) return { width: 0, height: 0 };
+
+  const width = element.offsetWidth || 0;
+  const height = element.offsetHeight || 0;
+
+  if (element.dataset) {
+    element.dataset.stageNaturalWidth = String(width);
+    element.dataset.stageNaturalHeight = String(height);
+  }
+
+  return { width, height };
+}
+
+export function resolveSize(element, container, specInput = {}) {
+  const spec = normaliseSpec(specInput);
+  const stageWidth = container?.clientWidth || 0;
+  const stageHeight = container?.clientHeight || 0;
+  const naturalWidth = finiteNumber(
+    element?.dataset?.stageNaturalWidth,
+    element?.offsetWidth || 0
+  );
+  const naturalHeight = finiteNumber(
+    element?.dataset?.stageNaturalHeight,
+    element?.offsetHeight || 0
+  );
+
+  if (spec.sizeMode === "percent") {
+    return {
+      width: Math.max(1, stageWidth * (spec.sizeWidth / 100)),
+      height: Math.max(1, stageHeight * (spec.sizeHeight / 100))
+    };
+  }
+
+  if (spec.sizeMode === "absolute") {
+    return {
+      width: Math.max(1, spec.sizeWidth || naturalWidth),
+      height: Math.max(1, spec.sizeHeight || naturalHeight)
+    };
+  }
+
+  return {
+    width: Math.max(1, naturalWidth),
+    height: Math.max(1, naturalHeight)
+  };
+}
+
+export function sizeValuesForDimensions(
+  element,
+  container,
+  specInput = {},
+  { width = 0, height = 0 } = {}
+) {
+  const spec = normaliseSpec(specInput);
+  const stageWidth = container?.clientWidth || 0;
+  const stageHeight = container?.clientHeight || 0;
+
+  if (spec.sizeMode === "percent") {
+    return {
+      sizeWidth: stageWidth ? (width / stageWidth) * 100 : 0,
+      sizeHeight: stageHeight ? (height / stageHeight) * 100 : 0
+    };
+  }
+
+  return {
+    sizeWidth: width,
+    sizeHeight: height
+  };
+}
+
 export function resolvePosition(element, container, specInput = {}) {
   const spec = normaliseSpec(specInput);
-  const metrics = elementMetrics(element, container);
+  const size = resolveSize(element, container, spec);
+  const metrics = {
+    ...elementMetrics(element, container),
+    elementWidth: size.width,
+    elementHeight: size.height
+  };
   const offsets = positionOffsets(metrics, spec);
   const base = anchoredTarget(metrics, spec, offsets);
 
@@ -132,7 +213,12 @@ export function positionValuesForCoordinates(
   { left = 0, top = 0 } = {}
 ) {
   const spec = normaliseSpec(specInput);
-  const metrics = elementMetrics(element, container);
+  const size = resolveSize(element, container, spec);
+  const metrics = {
+    ...elementMetrics(element, container),
+    elementWidth: size.width,
+    elementHeight: size.height
+  };
   const zeroOffsets = { x: 0, y: 0 };
   const base = anchoredTarget(metrics, spec, zeroOffsets);
 
@@ -156,8 +242,13 @@ export function destinationFrame(element, container, specInput = {}) {
   const spec = normaliseSpec(specInput);
   const depth = resolveDepth(spec);
   const position = resolvePosition(element, container, spec);
+  const size = resolveSize(element, container, spec);
 
   const frame = {
+    width: `${trimNumber(size.width)}px`,
+    height: `${trimNumber(size.height)}px`,
+    minWidth: "0px",
+    minHeight: "0px",
     transform: transform({
       x: position.x,
       y: position.y,
@@ -337,6 +428,7 @@ export function cssForElement({
   const spec = normaliseSpec(specInput);
   const depth = resolveDepth(spec);
   const positionUnit = spec.positionMode === "percent" ? "%" : "px";
+  const sizeUnit = spec.sizeMode === "percent" ? "%" : "px";
   const lines = [
     `${selector}[data-stage-state="${cssEscape(stateName)}"] {`,
     `  --stage-transition: ${spec.transition};`,
@@ -350,6 +442,9 @@ export function cssForElement({
     `  --stage-position-mode: ${spec.positionMode};`,
     `  --stage-position-x: ${trimNumber(spec.positionX)}${positionUnit};`,
     `  --stage-position-y: ${trimNumber(spec.positionY)}${positionUnit};`,
+    `  --stage-size-mode: ${spec.sizeMode};`,
+    `  --stage-size-width: ${spec.sizeMode === "natural" ? "auto" : trimNumber(spec.sizeWidth) + sizeUnit};`,
+    `  --stage-size-height: ${spec.sizeMode === "natural" ? "auto" : trimNumber(spec.sizeHeight) + sizeUnit};`,
     `  --stage-distance: ${spec.distance}px;`,
     `  --stage-duration: ${spec.duration}ms;`,
     `  --stage-stagger: ${spec.stagger}ms;`,
@@ -361,6 +456,8 @@ export function cssForElement({
 
   if (frame) {
     lines.push(
+      `  width: ${frame.width};`,
+      `  height: ${frame.height};`,
       `  transform: ${frame.transform};`,
       `  filter: ${frame.filter};`,
       `  opacity: ${frame.opacity};`
@@ -492,7 +589,8 @@ export function motionMarkup(specInput = {}) {
     `data-stage-direction="${spec.direction}"`,
     `data-stage-anchor-x="${spec.horizontalAnchor}"`,
     `data-stage-anchor-y="${spec.verticalAnchor}"`,
-    `data-stage-position-mode="${spec.positionMode}"`
+    `data-stage-position-mode="${spec.positionMode}"`,
+    `data-stage-size-mode="${spec.sizeMode}"`
   ].join("\n");
 }
 
@@ -568,6 +666,11 @@ function normaliseHorizontalAnchor(value) {
 
 function normaliseVerticalAnchor(value) {
   return value === "top" || value === "bottom" ? value : "center";
+}
+
+function normaliseSizeMode(value) {
+  if (value === "absolute" || value === "percent") return value;
+  return "natural";
 }
 
 function parseCustomCss(cssText) {

@@ -2,13 +2,17 @@ import "./styles.css";
 import {
   animateBetweenStates,
   applyFrame,
+  captureNaturalSize,
   cssForElement,
   cssForParent,
   destinationFrame,
   layoutCompanionFrames,
   normaliseSpec,
   positionValuesForCoordinates,
-  resolvePosition
+  resolveDepth,
+  resolvePosition,
+  resolveSize,
+  sizeValuesForDimensions
 } from "./spacial-stage.js";
 
 const STORAGE_KEY = "spacial-stage-state-authoring-v3";
@@ -31,8 +35,11 @@ const parentCss = document.querySelector("#parentCss");
 const stateDirtyBadge = document.querySelector("#stateDirtyBadge");
 const selectionOverlay = document.querySelector("#selectionOverlay");
 const selectionOverlayLabel = document.querySelector("#selectionOverlayLabel");
+const selectionResizeHandle = document.querySelector("#selectionResizeHandle");
 const positionXUnit = document.querySelector("#positionXUnit");
 const positionYUnit = document.querySelector("#positionYUnit");
+const sizeWidthUnit = document.querySelector("#sizeWidthUnit");
+const sizeHeightUnit = document.querySelector("#sizeHeightUnit");
 
 const OBJECTS = Object.freeze({
   svg: {
@@ -56,6 +63,10 @@ const OBJECTS = Object.freeze({
     element: document.querySelector("#cardsObject")
   }
 });
+
+for (const object of Object.values(OBJECTS)) {
+  captureNaturalSize(object.element);
+}
 
 const base = (role, overrides = {}) => normaliseSpec({
   role,
@@ -291,6 +302,7 @@ let formSyncing = false;
 let replayTimer = null;
 let replaySequence = 0;
 let dragState = null;
+let resizeState = null;
 
 function loadModel() {
   try {
@@ -652,7 +664,8 @@ function setForm(specInput) {
     "direction",
     "horizontalAnchor",
     "verticalAnchor",
-    "positionMode"
+    "positionMode",
+    "sizeMode"
   ]) {
     const radio =
       form.querySelector(`input[name="${key}"][value="${spec[key]}"]`)
@@ -661,8 +674,18 @@ function setForm(specInput) {
     if (radio) radio.checked = true;
   }
 
+  const resolvedSize = resolveSize(OBJECTS[selectedObjectId].element, stage, spec);
+
   form.elements.positionX.value = formatPositionNumber(spec.positionX, spec.positionMode);
   form.elements.positionY.value = formatPositionNumber(spec.positionY, spec.positionMode);
+  form.elements.sizeWidth.value = formatSizeNumber(
+    spec.sizeMode === "natural" ? resolvedSize.width : spec.sizeWidth,
+    spec.sizeMode
+  );
+  form.elements.sizeHeight.value = formatSizeNumber(
+    spec.sizeMode === "natural" ? resolvedSize.height : spec.sizeHeight,
+    spec.sizeMode
+  );
   form.elements.customX.value = spec.customVector.x;
   form.elements.customY.value = spec.customVector.y;
   form.elements.distance.value = spec.distance;
@@ -676,6 +699,8 @@ function setForm(specInput) {
 
   syncOutputs();
   syncPositionUnits(spec.positionMode);
+  syncSizeUnits(spec.sizeMode);
+  syncSizeInputs(spec.sizeMode);
   formSyncing = false;
 }
 
@@ -694,6 +719,9 @@ function readForm() {
     positionMode: form.elements.positionMode.value,
     positionX: Number(form.elements.positionX.value),
     positionY: Number(form.elements.positionY.value),
+    sizeMode: form.elements.sizeMode.value,
+    sizeWidth: Number(form.elements.sizeWidth.value),
+    sizeHeight: Number(form.elements.sizeHeight.value),
     customVector: {
       x: Number(form.elements.customX.value),
       y: Number(form.elements.customY.value)
@@ -710,7 +738,7 @@ function readForm() {
 }
 
 function updateSelectedSpec(event) {
-  if (formSyncing || dragState) return;
+  if (formSyncing || dragState || resizeState) return;
 
   const state = activeState();
   const object = OBJECTS[selectedObjectId];
@@ -739,10 +767,32 @@ function updateSelectedSpec(event) {
     formSyncing = false;
   }
 
+  if (event?.target?.name === "sizeMode" && newSpec.sizeMode !== "natural") {
+    const currentSize = resolveSize(object.element, stage, oldSpec);
+    const convertedSize = sizeValuesForDimensions(
+      object.element,
+      stage,
+      newSpec,
+      currentSize
+    );
+
+    newSpec = normaliseSpec({
+      ...newSpec,
+      ...convertedSize
+    });
+
+    formSyncing = true;
+    form.elements.sizeWidth.value = formatSizeNumber(newSpec.sizeWidth, newSpec.sizeMode);
+    form.elements.sizeHeight.value = formatSizeNumber(newSpec.sizeHeight, newSpec.sizeMode);
+    formSyncing = false;
+  }
+
   state.objects[selectedObjectId] = newSpec;
 
   syncOutputs();
   syncPositionUnits(newSpec.positionMode);
+  syncSizeUnits(newSpec.sizeMode);
+  syncSizeInputs(newSpec.sizeMode);
   saveModel();
   updateCssInspector();
   updateSelectionOverlay();
@@ -855,6 +905,18 @@ function syncPositionUnits(positionMode) {
   const unit = positionMode === "percent" ? "%" : "px";
   positionXUnit.textContent = unit;
   positionYUnit.textContent = unit;
+}
+
+function syncSizeUnits(sizeMode) {
+  const unit = sizeMode === "percent" ? "%" : "px";
+  sizeWidthUnit.textContent = unit;
+  sizeHeightUnit.textContent = unit;
+}
+
+function syncSizeInputs(sizeMode) {
+  const disabled = sizeMode === "natural";
+  form.elements.sizeWidth.disabled = disabled;
+  form.elements.sizeHeight.disabled = disabled;
 }
 
 function addState() {
@@ -1015,6 +1077,130 @@ function endDrag(event) {
   updateCssInspector();
 }
 
+function beginResize(event) {
+  if (event.button !== undefined && event.button !== 0) return;
+
+  event.preventDefault();
+  event.stopPropagation();
+
+  const object = OBJECTS[selectedObjectId];
+  if (!object) return;
+
+  clearTimeout(replayTimer);
+  replaySequence += 1;
+  object.element.getAnimations().forEach((animation) => animation.cancel());
+
+  const state = activeState();
+  let spec = state.objects[selectedObjectId];
+  const startRect = measureDestinationRect(object.element, spec);
+  const currentSize = resolveSize(object.element, stage, spec);
+
+  if (spec.sizeMode === "natural") {
+    spec = normaliseSpec({
+      ...spec,
+      sizeMode: "absolute",
+      sizeWidth: currentSize.width,
+      sizeHeight: currentSize.height
+    });
+    state.objects[selectedObjectId] = spec;
+    setForm(spec);
+  }
+
+  resizeState = {
+    objectId: selectedObjectId,
+    pointerId: event.pointerId,
+    startClientX: event.clientX,
+    startClientY: event.clientY,
+    startRect,
+    startSpec: spec
+  };
+
+  stage.classList.add("is-resizing");
+  selectionOverlayLabel.textContent = "Resizing · " + object.name;
+  selectionResizeHandle.setPointerCapture?.(event.pointerId);
+}
+
+function moveResize(event) {
+  if (!resizeState || event.pointerId !== resizeState.pointerId) return;
+
+  const object = OBJECTS[resizeState.objectId];
+  const state = activeState();
+  const spec = resizeState.startSpec;
+  const depthScale = resolveDepth(spec).scale || 1;
+  const deltaX = event.clientX - resizeState.startClientX;
+  const deltaY = event.clientY - resizeState.startClientY;
+
+  const visualWidth = Math.max(32, resizeState.startRect.width + deltaX);
+  const visualHeight = Math.max(32, resizeState.startRect.height + deltaY);
+  const layoutWidth = visualWidth / depthScale;
+  const layoutHeight = visualHeight / depthScale;
+
+  const sizeValues = sizeValuesForDimensions(
+    object.element,
+    stage,
+    spec,
+    { width: layoutWidth, height: layoutHeight }
+  );
+
+  let nextSpec = normaliseSpec({
+    ...spec,
+    ...sizeValues
+  });
+
+  const stageRect = stage.getBoundingClientRect();
+  const layoutLeft =
+    resizeState.startRect.left - stageRect.left
+    + (visualWidth - layoutWidth) / 2;
+  const layoutTop =
+    resizeState.startRect.top - stageRect.top
+    + (visualHeight - layoutHeight) / 2;
+
+  const positionValues = positionValuesForCoordinates(
+    object.element,
+    stage,
+    nextSpec,
+    { left: layoutLeft, top: layoutTop }
+  );
+
+  nextSpec = normaliseSpec({
+    ...nextSpec,
+    ...positionValues
+  });
+
+  state.objects[resizeState.objectId] = nextSpec;
+
+  applyFrame(
+    object.element,
+    destinationFrame(object.element, stage, nextSpec)
+  );
+
+  formSyncing = true;
+  form.elements.sizeWidth.value = formatSizeNumber(nextSpec.sizeWidth, nextSpec.sizeMode);
+  form.elements.sizeHeight.value = formatSizeNumber(nextSpec.sizeHeight, nextSpec.sizeMode);
+  form.elements.positionX.value = formatPositionNumber(nextSpec.positionX, nextSpec.positionMode);
+  form.elements.positionY.value = formatPositionNumber(nextSpec.positionY, nextSpec.positionMode);
+  formSyncing = false;
+
+  updateCssInspector();
+  updateSelectionOverlay();
+}
+
+function endResize(event) {
+  if (!resizeState || event.pointerId !== resizeState.pointerId) return;
+
+  const object = OBJECTS[resizeState.objectId];
+
+  selectionResizeHandle.releasePointerCapture?.(event.pointerId);
+  stage.classList.remove("is-resizing");
+  selectionOverlayLabel.textContent = object.name;
+
+  resizeState = null;
+  saveModel();
+  setForm(activeSpec());
+  updateCssInspector();
+  updateSelectionOverlay();
+}
+
 function cancelObjectAnimations() {
   for (const object of Object.values(OBJECTS)) {
     object.element.getAnimations().forEach((animation) => animation.cancel());
@@ -1038,6 +1224,11 @@ function flashSaved() {
 }
 
 function formatPositionNumber(value, mode) {
+  const digits = mode === "percent" ? 2 : 1;
+  return String(Number(Number(value).toFixed(digits)));
+}
+
+function formatSizeNumber(value, mode) {
   const digits = mode === "percent" ? 2 : 1;
   return String(Number(Number(value).toFixed(digits)));
 }
@@ -1086,6 +1277,11 @@ for (const [objectId, object] of Object.entries(OBJECTS)) {
   });
 }
 
+selectionResizeHandle.addEventListener("pointerdown", beginResize);
+
+window.addEventListener("pointermove", moveResize);
+window.addEventListener("pointerup", endResize);
+window.addEventListener("pointercancel", endResize);
 window.addEventListener("pointermove", moveDrag);
 window.addEventListener("pointerup", endDrag);
 window.addEventListener("pointercancel", endDrag);
