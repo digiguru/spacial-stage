@@ -6,7 +6,7 @@
     <meta name="theme-color" content="#171816" />
     <meta
       name="description"
-      content="Spacial Stage — an interactive motion grammar playground for spatial interfaces."
+      content="Spacial Stage — author named UI states and inspect the motion/CSS between them."
     />
     <title>Spacial Stage</title>
     <script type="module" src="/src/demo.js"></script>
@@ -15,326 +15,238 @@
     <div class="app-shell">
       <header class="topbar">
         <div class="brand-lockup">
-          <div class="brand-mark" aria-hidden="true">
-            <span></span>
-            <span></span>
-            <span></span>
-          </div>
+          <div class="brand-mark" aria-hidden="true"><span></span><span></span><span></span></div>
           <div>
-            <p class="eyebrow">Motion grammar playground</p>
+            <p class="eyebrow">State motion playground</p>
             <h1>Spacial Stage</h1>
           </div>
         </div>
         <div class="topbar-actions">
-          <button id="resetButton" class="button button-secondary" type="button">Reset</button>
-          <button id="playButton" class="button button-primary" type="button">
-            <span class="play-icon" aria-hidden="true">▶</span>
-            Play animation
-          </button>
+          <button id="resetButton" class="button button-secondary" type="button">Reset demo</button>
+          <button id="replayButton" class="button button-primary" type="button">↻ Replay transition</button>
         </div>
       </header>
 
-      <main class="layout">
-        <aside class="controls" aria-label="Animation controls">
-          <section class="controls-intro">
-            <p class="eyebrow">Compose a behaviour</p>
-            <h2>Pick one term from each axis</h2>
-            <p>
-              The point is not to prove these names are right. The point is to make them
-              concrete enough that the bad names become obvious.
-            </p>
-          </section>
+      <nav class="state-bar" aria-label="Stage states">
+        <div class="state-bar-label">
+          <span>States</span>
+          <small>Each tab stores a destination configuration for every object.</small>
+        </div>
+        <div id="stateTabs" class="state-tabs"></div>
+        <button id="addStateButton" class="state-add" type="button" aria-label="Add state">＋ State</button>
+      </nav>
 
-          <form id="motionForm" class="control-stack">
-            <fieldset class="control-group">
-              <legend>Object role</legend>
-              <p class="control-help">What kind of thing is moving?</p>
-              <div class="segmented" data-control="role">
-                <label><input type="radio" name="role" value="shared" checked /><span>Shared</span></label>
-                <label><input type="radio" name="role" value="panel" /><span>Panel</span></label>
-                <label><input type="radio" name="role" value="content" /><span>Content</span></label>
-                <label><input type="radio" name="role" value="collection" /><span>Collection</span></label>
-                <label><input type="radio" name="role" value="custom" /><span>Custom</span></label>
-              </div>
-              <input
-                class="custom-term"
-                data-custom-for="role"
-                type="text"
-                placeholder="Your object-role term"
-                hidden
-              />
-            </fieldset>
-
-            <fieldset class="control-group">
-              <legend>Transition</legend>
-              <p class="control-help">What happens to its presence or layout space?</p>
-              <div class="segmented" data-control="transition">
-                <label><input type="radio" name="transition" value="push" checked /><span>Push</span></label>
-                <label><input type="radio" name="transition" value="reveal" /><span>Reveal</span></label>
-                <label><input type="radio" name="transition" value="slide" /><span>Slide</span></label>
-                <label><input type="radio" name="transition" value="collapse" /><span>Collapse</span></label>
-                <label><input type="radio" name="transition" value="custom" /><span>Custom</span></label>
-              </div>
-              <input
-                class="custom-term"
-                data-custom-for="transition"
-                type="text"
-                placeholder="Your transition term"
-                hidden
-              />
-            </fieldset>
-
-            <fieldset class="control-group">
-              <legend>Attachment</legend>
-              <p class="control-help">How is it attached to the layout?</p>
-              <div class="segmented" data-control="attachment">
-                <label><input type="radio" name="attachment" value="free" checked /><span>Free</span></label>
-                <label><input type="radio" name="attachment" value="float" /><span>Float</span></label>
-                <label><input type="radio" name="attachment" value="dock" /><span>Dock</span></label>
-                <label><input type="radio" name="attachment" value="pin" /><span>Pin</span></label>
-                <label><input type="radio" name="attachment" value="custom" /><span>Custom</span></label>
-              </div>
-              <input
-                class="custom-term"
-                data-custom-for="attachment"
-                type="text"
-                placeholder="Your attachment term"
-                hidden
-              />
-            </fieldset>
-
-            <fieldset class="control-group">
-              <legend>Coordination</legend>
-              <p class="control-help">How does it move relative to other objects?</p>
-              <div class="segmented" data-control="coordination">
-                <label><input type="radio" name="coordination" value="none" checked /><span>None</span></label>
-                <label><input type="radio" name="coordination" value="swap" /><span>Swap</span></label>
-                <label><input type="radio" name="coordination" value="stagger" /><span>Stagger</span></label>
-                <label><input type="radio" name="coordination" value="follow" /><span>Follow</span></label>
-                <label><input type="radio" name="coordination" value="custom" /><span>Custom</span></label>
-              </div>
-              <input
-                class="custom-term"
-                data-custom-for="coordination"
-                type="text"
-                placeholder="Your coordination term"
-                hidden
-              />
-            </fieldset>
-
-            <fieldset class="control-group">
-              <legend>Depth</legend>
-              <p class="control-help">
-                Where does it sit perceptually? This is where <strong>Focus</strong> currently lives.
-              </p>
-              <div class="segmented" data-control="depth">
-                <label><input type="radio" name="depth" value="background" /><span>Background</span></label>
-                <label><input type="radio" name="depth" value="focus" checked /><span>Focus</span></label>
-                <label><input type="radio" name="depth" value="foreground" /><span>Foreground</span></label>
-                <label><input type="radio" name="depth" value="custom" /><span>Custom</span></label>
-              </div>
-              <input
-                class="custom-term"
-                data-custom-for="depth"
-                type="text"
-                placeholder="Your depth term"
-                hidden
-              />
-            </fieldset>
-
-            <fieldset class="control-group">
-              <legend>Direction</legend>
-              <p class="control-help">Which edge or vector participates?</p>
-              <div class="segmented" data-control="direction">
-                <label><input type="radio" name="direction" value="auto" checked /><span>Auto</span></label>
-                <label><input type="radio" name="direction" value="top" /><span>Top</span></label>
-                <label><input type="radio" name="direction" value="right" /><span>Right</span></label>
-                <label><input type="radio" name="direction" value="bottom" /><span>Bottom</span></label>
-                <label><input type="radio" name="direction" value="left" /><span>Left</span></label>
-                <label><input type="radio" name="direction" value="custom" /><span>Custom</span></label>
-              </div>
-              <div class="custom-vector" data-custom-for="direction" hidden>
-                <label>
-                  <span>X vector</span>
-                  <input type="number" name="customX" value="-1" step="0.1" />
-                </label>
-                <label>
-                  <span>Y vector</span>
-                  <input type="number" name="customY" value="0" step="0.1" />
-                </label>
-              </div>
-            </fieldset>
-
-            <details class="custom-overrides">
-              <summary>
-                <span>
-                  <strong>Custom overrides</strong>
-                  <small>Always available. The escape hatch is part of the API.</small>
-                </span>
-                <span aria-hidden="true">＋</span>
-              </summary>
-              <div class="override-grid">
-                <label>
-                  <span>Distance</span>
-                  <input type="range" name="distance" min="0" max="520" value="180" />
-                  <output data-output="distance">180px</output>
-                </label>
-                <label>
-                  <span>Duration</span>
-                  <input type="range" name="duration" min="100" max="1800" step="50" value="700" />
-                  <output data-output="duration">700ms</output>
-                </label>
-                <label>
-                  <span>Stagger gap</span>
-                  <input type="range" name="stagger" min="0" max="240" step="10" value="80" />
-                  <output data-output="stagger">80ms</output>
-                </label>
-                <label>
-                  <span>Blur</span>
-                  <input type="range" name="blur" min="0" max="28" value="0" />
-                  <output data-output="blur">0px</output>
-                </label>
-                <label>
-                  <span>Scale</span>
-                  <input type="range" name="scale" min="70" max="130" value="100" />
-                  <output data-output="scale">1.00</output>
-                </label>
-                <label>
-                  <span>Opacity</span>
-                  <input type="range" name="opacity" min="10" max="100" value="100" />
-                  <output data-output="opacity">1.00</output>
-                </label>
-                <label class="override-wide">
-                  <span>Easing</span>
-                  <input
-                    type="text"
-                    name="easing"
-                    value="cubic-bezier(.2,.82,.24,1)"
-                    spellcheck="false"
-                  />
-                </label>
-              </div>
-            </details>
-          </form>
-        </aside>
-
-        <section class="playground">
-          <div class="preset-strip" aria-label="Example behaviours">
-            <span class="preset-label">Try:</span>
-            <button type="button" data-preset="cloudRail">Cloud rail</button>
-            <button type="button" data-preset="topHeader">Top header</button>
-            <button type="button" data-preset="sharedFocus">Shared focus</button>
-            <button type="button" data-preset="dockCard">Dock card</button>
-            <button type="button" data-preset="staggerCards">Stagger cards</button>
-            <button type="button" data-preset="followBadges">Follow</button>
-            <button type="button" data-preset="swapPanels">Swap</button>
-            <button type="button" data-preset="collapseSection">Collapse</button>
+      <main class="workspace">
+        <section class="canvas-column">
+          <div class="object-toolbar">
+            <div>
+              <p class="eyebrow">Objects on stage</p>
+              <div id="objectTabs" class="object-tabs" role="tablist" aria-label="Objects"></div>
+            </div>
+            <p class="object-toolbar-help">Click an object here or directly on the stage, then edit how it behaves in the active state.</p>
           </div>
 
-          <div id="stage" class="stage" aria-live="polite">
+          <div id="stage" class="stage" data-stage data-active-state="home">
             <div class="stage-grid" aria-hidden="true"></div>
 
-            <header id="demoHeader" class="demo-header stage-object">
-              <span class="demo-dot"></span>
-              <span>Header surface</span>
-              <div class="demo-header-actions">
-                <i></i><i></i><i></i>
-              </div>
-            </header>
+            <div id="stageContent" class="stage-content">
+              <button
+                id="svgObject"
+                class="stage-object svg-object"
+                type="button"
+                data-object="svg"
+                data-role="shared"
+                aria-label="Select SVG object"
+              >
+                <svg viewBox="0 0 320 320" aria-hidden="true">
+                  <defs>
+                    <linearGradient id="ringGradient" x1="0" y1="0" x2="1" y2="1">
+                      <stop offset="0%" stop-color="#d8ff63"/>
+                      <stop offset="35%" stop-color="#8be4ff"/>
+                      <stop offset="68%" stop-color="#cbbdff"/>
+                      <stop offset="100%" stop-color="#ff9b85"/>
+                    </linearGradient>
+                  </defs>
+                  <circle cx="160" cy="160" r="143" fill="none" stroke="url(#ringGradient)" stroke-width="28"/>
+                  <circle cx="160" cy="160" r="103" fill="none" stroke="rgba(255,255,255,.22)" stroke-width="2"/>
+                  <path d="M95 171 C120 88 214 90 232 161 C245 212 200 248 151 233 C108 220 79 199 95 171Z" fill="rgba(255,255,255,.08)" stroke="rgba(255,255,255,.25)" stroke-width="2"/>
+                  <circle cx="126" cy="142" r="10" fill="#d8ff63"/>
+                  <circle cx="195" cy="132" r="8" fill="#8be4ff"/>
+                  <circle cx="177" cy="199" r="13" fill="#cbbdff"/>
+                </svg>
+                <span class="object-caption">SVG object</span>
+              </button>
 
-            <aside id="demoPanel" class="demo-panel stage-object">
+              <button
+                id="copyObject"
+                class="stage-object copy-object"
+                type="button"
+                data-object="copy"
+                data-role="content"
+                aria-label="Select title and paragraph"
+              >
+                <span class="kicker">Reading the room</span>
+                <strong>A shared visual can keep context while the interface changes around it.</strong>
+                <span class="body-copy">This title and paragraph are a separate stage object. Give them their own destination, depth and transition in each named state.</span>
+              </button>
+
+              <div id="cardsObject" class="stage-object cards-object" data-object="cards" data-role="collection">
+                <button type="button" class="floating-card" data-card-index="0" aria-label="Select floating cards">
+                  <span>01</span><strong>Signal</strong><small>Arrive deliberately</small>
+                </button>
+                <button type="button" class="floating-card" data-card-index="1" aria-label="Select floating cards">
+                  <span>02</span><strong>Context</strong><small>Preserve orientation</small>
+                </button>
+                <button type="button" class="floating-card" data-card-index="2" aria-label="Select floating cards">
+                  <span>03</span><strong>Settle</strong><small>Land cleanly</small>
+                </button>
+              </div>
+            </div>
+
+            <button
+              id="panelObject"
+              class="stage-object panel-object"
+              type="button"
+              data-object="panel"
+              data-role="panel"
+              aria-label="Select panel"
+            >
               <span class="panel-handle"></span>
-              <p class="eyebrow">Panel</p>
-              <strong>History rail</strong>
-              <div class="mini-nav">
-                <span></span><span></span><span></span><span></span>
-              </div>
-            </aside>
+              <span class="kicker">Panel</span>
+              <strong>Cloud navigation</strong>
+              <span class="panel-line"></span>
+              <span class="panel-line short"></span>
+              <span class="panel-line"></span>
+              <span class="panel-line tiny"></span>
+            </button>
 
-            <div id="sharedObject" class="shared-object stage-object">
-              <div class="shared-rings" aria-hidden="true">
-                <span></span><span></span><span></span>
-              </div>
-              <div class="shared-core">
-                <small>Shared visual</small>
-                <strong>Stage</strong>
-              </div>
+            <div class="stage-state-label">
+              <span>Active state</span>
+              <strong id="stageStateLabel">Home</strong>
             </div>
-
-            <div id="contentObject" class="content-object stage-object">
-              <p class="eyebrow">Content</p>
-              <strong>Working surface</strong>
-              <p>Something meaningful lives here while the stage moves around it.</p>
-              <div class="content-bars"><span></span><span></span><span></span></div>
-            </div>
-
-            <div id="collectionObject" class="collection-object stage-object">
-              <article><span>01</span><strong>Observe</strong></article>
-              <article><span>02</span><strong>Orient</strong></article>
-              <article><span>03</span><strong>Move</strong></article>
-              <article><span>04</span><strong>Settle</strong></article>
-            </div>
-
-            <div id="swapObject" class="swap-object stage-object">
-              <p class="eyebrow">Swap target</p>
-              <strong>Second surface</strong>
-            </div>
-
-            <div id="followers" class="followers stage-object" aria-hidden="true">
-              <span>1</span><span>2</span><span>3</span>
-            </div>
-
-            <div class="stage-origin-label">stage</div>
           </div>
 
-          <section class="spec-panel">
-            <div class="spec-heading">
+          <section class="css-inspector">
+            <div class="css-inspector-heading">
               <div>
-                <p class="eyebrow">Current phrase</p>
-                <h2 id="motionPhrase">Shared · Push · Free · Focus · Auto</h2>
+                <p class="eyebrow">Generated implementation</p>
+                <h2 id="cssTitle">SVG object · Home</h2>
               </div>
-              <span id="statusBadge" class="status-badge">Ready</span>
+              <span class="live-pill">Updates live</span>
             </div>
-
-            <div class="spec-grid">
-              <div>
-                <p class="eyebrow">Library call</p>
-                <pre><code id="codePreview"></code></pre>
-              </div>
-              <div>
-                <p class="eyebrow">Declarative markup</p>
-                <pre><code id="markupPreview"></code></pre>
-              </div>
-            </div>
-          </section>
-
-          <section class="terminology-note">
-            <p class="eyebrow">Terminology under test</p>
-            <div class="term-cards">
+            <div class="css-grid">
               <article>
-                <strong>Focus moved out of “Transition”</strong>
-                <p>
-                  Push, reveal and collapse describe what changes. Focus describes perceived depth.
-                  The playground keeps them separate so we can see if that feels natural.
-                </p>
+                <div class="code-heading"><strong>Element CSS</strong><small>Destination + motion variables</small></div>
+                <pre><code id="elementCss"></code></pre>
               </article>
               <article>
-                <strong>“Locking” became “Attachment”</strong>
-                <p>
-                  Float, dock and pin describe the object's relationship to layout more clearly than
-                  “locking”.
-                </p>
-              </article>
-              <article>
-                <strong>“Interaction” became “Coordination”</strong>
-                <p>
-                  Swap, stagger and follow are relationships between moving objects, rather than
-                  user interactions.
-                </p>
+                <div class="code-heading"><strong>Parent / group CSS</strong><small>Only rules this behaviour requires</small></div>
+                <pre><code id="parentCss"></code></pre>
               </article>
             </div>
           </section>
         </section>
+
+        <aside class="inspector" aria-label="Selected object state controls">
+          <div class="inspector-sticky">
+            <section class="selection-heading">
+              <p class="eyebrow">Editing</p>
+              <div class="selection-title-row">
+                <div>
+                  <h2 id="selectedObjectName">SVG object</h2>
+                  <p><span id="selectedRole">Shared</span> object in <strong id="selectedStateName">Home</strong></p>
+                </div>
+                <span id="stateDirtyBadge" class="state-chip">Saved</span>
+              </div>
+            </section>
+
+            <form id="motionForm" class="control-stack">
+              <fieldset class="control-group">
+                <legend>Transition into this state</legend>
+                <p class="control-help">How should this object travel from the previous named state to this destination?</p>
+                <div class="segmented" data-control="transition">
+                  <label><input type="radio" name="transition" value="slide" /><span>Slide</span></label>
+                  <label><input type="radio" name="transition" value="push" /><span>Push</span></label>
+                  <label><input type="radio" name="transition" value="reveal" /><span>Reveal</span></label>
+                  <label><input type="radio" name="transition" value="collapse" /><span>Collapse</span></label>
+                  <label><input type="radio" name="transition" value="custom" /><span>Custom</span></label>
+                </div>
+              </fieldset>
+
+              <fieldset class="control-group">
+                <legend>Attachment</legend>
+                <p class="control-help">Where does the destination belong relative to the stage?</p>
+                <div class="segmented" data-control="attachment">
+                  <label><input type="radio" name="attachment" value="free" /><span>Free</span></label>
+                  <label><input type="radio" name="attachment" value="float" /><span>Float</span></label>
+                  <label><input type="radio" name="attachment" value="dock" /><span>Dock</span></label>
+                  <label><input type="radio" name="attachment" value="pin" /><span>Pin</span></label>
+                  <label><input type="radio" name="attachment" value="custom" /><span>Custom</span></label>
+                </div>
+              </fieldset>
+
+              <fieldset class="control-group">
+                <legend>Coordination</legend>
+                <p class="control-help">How does this object relate to other moving objects?</p>
+                <div class="segmented" data-control="coordination">
+                  <label><input type="radio" name="coordination" value="none" /><span>None</span></label>
+                  <label><input type="radio" name="coordination" value="swap" /><span>Swap</span></label>
+                  <label><input type="radio" name="coordination" value="stagger" /><span>Stagger</span></label>
+                  <label><input type="radio" name="coordination" value="follow" /><span>Follow</span></label>
+                  <label><input type="radio" name="coordination" value="custom" /><span>Custom</span></label>
+                </div>
+              </fieldset>
+
+              <fieldset class="control-group">
+                <legend>Depth</legend>
+                <p class="control-help">The perceptual layer the object occupies at the destination.</p>
+                <div class="segmented" data-control="depth">
+                  <label><input type="radio" name="depth" value="background" /><span>Background</span></label>
+                  <label><input type="radio" name="depth" value="focus" /><span>Focus</span></label>
+                  <label><input type="radio" name="depth" value="foreground" /><span>Foreground</span></label>
+                  <label><input type="radio" name="depth" value="custom" /><span>Custom</span></label>
+                </div>
+              </fieldset>
+
+              <fieldset class="control-group">
+                <legend>Direction / edge</legend>
+                <p class="control-help">Used as the arrival direction and, for Dock, the edge to dock against.</p>
+                <div class="segmented" data-control="direction">
+                  <label><input type="radio" name="direction" value="auto" /><span>Auto</span></label>
+                  <label><input type="radio" name="direction" value="top" /><span>Top</span></label>
+                  <label><input type="radio" name="direction" value="right" /><span>Right</span></label>
+                  <label><input type="radio" name="direction" value="bottom" /><span>Bottom</span></label>
+                  <label><input type="radio" name="direction" value="left" /><span>Left</span></label>
+                  <label><input type="radio" name="direction" value="custom" /><span>Custom</span></label>
+                </div>
+              </fieldset>
+
+              <details class="custom-overrides" open>
+                <summary>
+                  <span><strong>Custom / numeric overrides</strong><small>Always available, regardless of presets.</small></span>
+                  <span aria-hidden="true">＋</span>
+                </summary>
+                <div class="override-grid">
+                  <label><span>Offset X</span><input type="number" name="offsetX" step="10" /><small>px</small></label>
+                  <label><span>Offset Y</span><input type="number" name="offsetY" step="10" /><small>px</small></label>
+                  <label><span>Distance</span><input type="range" name="distance" min="0" max="520" step="10" /><output data-output="distance"></output></label>
+                  <label><span>Duration</span><input type="range" name="duration" min="100" max="1800" step="50" /><output data-output="duration"></output></label>
+                  <label><span>Stagger gap</span><input type="range" name="stagger" min="0" max="240" step="10" /><output data-output="stagger"></output></label>
+                  <label><span>Blur</span><input type="range" name="blur" min="0" max="28" /><output data-output="blur"></output></label>
+                  <label><span>Scale</span><input type="range" name="scale" min="55" max="145" /><output data-output="scale"></output></label>
+                  <label><span>Opacity</span><input type="range" name="opacity" min="0" max="100" /><output data-output="opacity"></output></label>
+                  <label class="override-wide"><span>Easing</span><input type="text" name="easing" spellcheck="false" /></label>
+                  <label class="override-wide"><span>Custom CSS</span><textarea name="customCss" rows="4" spellcheck="false" placeholder="border-radius: 40px;&#10;mix-blend-mode: screen;"></textarea></label>
+                </div>
+              </details>
+            </form>
+
+            <section class="model-note">
+              <strong>Why named states, not “in / out”?</strong>
+              <p>An object can be background on Home, focused in Room and docked in Cloud. The state owns the destination; the transition describes how it arrives there.</p>
+            </section>
+          </div>
+        </aside>
       </main>
     </div>
   </body>
