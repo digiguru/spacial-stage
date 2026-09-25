@@ -10,7 +10,9 @@ import {
   resolveDepth,
   resolveDirection,
   resolvePosition,
-  resolvedDirectionName
+  resolveSize,
+  resolvedDirectionName,
+  sizeValuesForDimensions
 } from "../src/spacial-stage.js";
 
 test("normalises named-state specs including anchored position and custom vector", () => {
@@ -21,6 +23,9 @@ test("normalises named-state specs including anchored position and custom vector
     positionMode: "percent",
     positionX: "-12.5",
     positionY: "7.25",
+    sizeMode: "percent",
+    sizeWidth: "42",
+    sizeHeight: "31.5",
     duration: "900",
     scale: "1.2",
     customVector: { x: "3", y: "4" }
@@ -31,6 +36,9 @@ test("normalises named-state specs including anchored position and custom vector
   assert.equal(spec.positionMode, "percent");
   assert.equal(spec.positionX, -12.5);
   assert.equal(spec.positionY, 7.25);
+  assert.equal(spec.sizeMode, "percent");
+  assert.equal(spec.sizeWidth, 42);
+  assert.equal(spec.sizeHeight, 31.5);
   assert.equal(spec.duration, 900);
   assert.equal(spec.scale, 1.2);
   assert.deepEqual(spec.customVector, { x: 3, y: 4 });
@@ -75,6 +83,69 @@ test("depth remains a destination property independent of transition and layout"
   assert.ok(background.blur > focus.blur);
   assert.ok(background.opacity < focus.opacity);
   assert.equal(focus.opacity, 1);
+});
+
+test("natural, absolute and percentage sizes resolve independently from scale", () => {
+  const container = { clientWidth: 1000, clientHeight: 600 };
+  const element = {
+    offsetWidth: 240,
+    offsetHeight: 120,
+    dataset: {
+      stageNaturalWidth: "240",
+      stageNaturalHeight: "120"
+    }
+  };
+
+  assert.deepEqual(
+    resolveSize(element, container, { sizeMode: "natural", scale: 1.4 }),
+    { width: 240, height: 120 }
+  );
+
+  assert.deepEqual(
+    resolveSize(element, container, {
+      sizeMode: "absolute",
+      sizeWidth: 360,
+      sizeHeight: 180,
+      scale: 0.8
+    }),
+    { width: 360, height: 180 }
+  );
+
+  assert.deepEqual(
+    resolveSize(element, container, {
+      sizeMode: "percent",
+      sizeWidth: 50,
+      sizeHeight: 25
+    }),
+    { width: 500, height: 150 }
+  );
+});
+
+test("resize dimensions round-trip through percentage size values", () => {
+  const container = { clientWidth: 1000, clientHeight: 600 };
+  const element = {
+    offsetWidth: 200,
+    offsetHeight: 100,
+    dataset: {
+      stageNaturalWidth: "200",
+      stageNaturalHeight: "100"
+    }
+  };
+  const spec = { sizeMode: "percent" };
+
+  const values = sizeValuesForDimensions(
+    element,
+    container,
+    spec,
+    { width: 420, height: 210 }
+  );
+
+  assert.equal(values.sizeWidth, 42);
+  assert.equal(values.sizeHeight, 35);
+  assert.deepEqual(
+    resolveSize(element, container, { ...spec, ...values }),
+    { width: 420, height: 210 }
+  );
 });
 
 test("center anchored absolute positioning resolves against the stage", () => {
@@ -167,6 +238,9 @@ test("element CSS exposes every authored state axis including position", () => {
       positionMode: "percent",
       positionX: -18,
       positionY: 7.5,
+      sizeMode: "percent",
+      sizeWidth: 44,
+      sizeHeight: 36,
       distance: 320,
       duration: 840,
       stagger: 90
@@ -185,6 +259,9 @@ test("element CSS exposes every authored state axis including position", () => {
   assert.match(css, /--stage-position-mode: percent/);
   assert.match(css, /--stage-position-x: -18%/);
   assert.match(css, /--stage-position-y: 7.5%/);
+  assert.match(css, /--stage-size-mode: percent/);
+  assert.match(css, /--stage-size-width: 44%/);
+  assert.match(css, /--stage-size-height: 36%/);
 });
 
 test("parent CSS explains layout and coordination requirements", () => {
