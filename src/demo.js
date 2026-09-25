@@ -426,26 +426,58 @@ function updateSelectionOverlay() {
     return;
   }
 
-  const objectRect = object.element.getBoundingClientRect();
+  const destination = measureDestinationRect(
+    object.element,
+    activeSpec(selectedObjectId)
+  );
   const stageRect = stage.getBoundingClientRect();
 
-  if (!objectRect.width || !objectRect.height) {
+  if (!destination || !destination.width || !destination.height) {
     selectionOverlay.hidden = true;
     return;
   }
 
   selectionOverlay.hidden = false;
-  selectionOverlay.style.left = (objectRect.left - stageRect.left) + "px";
-  selectionOverlay.style.top = (objectRect.top - stageRect.top) + "px";
-  selectionOverlay.style.width = objectRect.width + "px";
-  selectionOverlay.style.height = objectRect.height + "px";
-  selectionOverlay.style.borderRadius =
-    getComputedStyle(object.element).borderRadius || "12px";
+  selectionOverlay.style.left = (destination.left - stageRect.left) + "px";
+  selectionOverlay.style.top = (destination.top - stageRect.top) + "px";
+  selectionOverlay.style.width = destination.width + "px";
+  selectionOverlay.style.height = destination.height + "px";
+  selectionOverlay.style.borderRadius = destination.borderRadius;
 }
 
-function selectionOverlayLoop() {
-  updateSelectionOverlay();
-  requestAnimationFrame(selectionOverlayLoop);
+function measureDestinationRect(element, spec) {
+  const clone = element.cloneNode(true);
+
+  clone.removeAttribute("id");
+  clone.removeAttribute("data-object");
+  clone.querySelectorAll("[id]").forEach((node) => node.removeAttribute("id"));
+  clone.querySelectorAll("[data-object]").forEach((node) => node.removeAttribute("data-object"));
+  clone.classList.remove("is-dragging");
+
+  Object.assign(clone.style, {
+    visibility: "hidden",
+    pointerEvents: "none",
+    transition: "none",
+    animation: "none"
+  });
+
+  element.parentElement.append(clone);
+
+  try {
+    applyFrame(clone, destinationFrame(clone, stage, spec));
+
+    const rect = clone.getBoundingClientRect();
+
+    return {
+      left: rect.left,
+      top: rect.top,
+      width: rect.width,
+      height: rect.height,
+      borderRadius: getComputedStyle(clone).borderRadius || "12px"
+    };
+  } finally {
+    clone.remove();
+  }
 }
 
 async function switchState(nextStateId, { force = false } = {}) {
@@ -464,6 +496,7 @@ async function switchState(nextStateId, { force = false } = {}) {
 
   renderStateTabs();
   stage.dataset.activeState = nextStateId;
+  updateSelectionOverlay();
   stage.dataset.transitioning = "true";
   isAnimating = true;
 
@@ -574,7 +607,6 @@ function applyStateImmediately(state) {
 
   stage.dataset.activeState = state.id;
   stageStateLabel.textContent = state.name;
-  updateSelectionOverlay();
 }
 
 async function replayTransition() {
@@ -588,6 +620,7 @@ async function replayTransition() {
   clearTimeout(replayTimer);
   replaySequence += 1;
   cancelObjectAnimations();
+  updateSelectionOverlay();
 
   applyStateImmediately(fromState);
   await nextFrame();
@@ -712,6 +745,7 @@ function updateSelectedSpec(event) {
   syncPositionUnits(newSpec.positionMode);
   saveModel();
   updateCssInspector();
+  updateSelectionOverlay();
   scheduleSelectedReplay();
 }
 
@@ -739,6 +773,7 @@ async function replaySelectedObjectFromPrevious() {
   const targetSpec = activeSpec();
   const sequence = ++replaySequence;
 
+  updateSelectionOverlay();
   object.element.getAnimations().forEach((animation) => animation.cancel());
 
   if (selectedObjectId === "cards") {
@@ -959,6 +994,7 @@ function moveDrag(event) {
     form.elements.positionY.value = formatPositionNumber(nextSpec.positionY, nextSpec.positionMode);
     formSyncing = false;
     updateCssInspector();
+    updateSelectionOverlay();
   }
 }
 
@@ -1053,6 +1089,7 @@ for (const [objectId, object] of Object.entries(OBJECTS)) {
 window.addEventListener("pointermove", moveDrag);
 window.addEventListener("pointerup", endDrag);
 window.addEventListener("pointercancel", endDrag);
+window.addEventListener("resize", updateSelectionOverlay);
 
 form.addEventListener("input", (event) => {
   updateSelectedSpec(event);
@@ -1072,4 +1109,3 @@ renderStateTabs();
 renderObjectTabs();
 applyStateImmediately(activeState());
 syncSelection();
-selectionOverlayLoop();
