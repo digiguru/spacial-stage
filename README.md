@@ -79,6 +79,22 @@ Objects can be dragged directly on the stage. Dragging converts the visual desti
 
 Changing anchor or unit mode preserves the visual position and recalculates the stored offsets.
 
+## Size authoring
+
+Size is also part of the destination state and is deliberately separate from **Scale**.
+
+Each object can use:
+
+- Natural size — the object's authored/CSS dimensions;
+- Pixels — explicit destination width and height;
+- Percent — width as a percentage of stage width and height as a percentage of stage height.
+
+The selection frame has a bottom-right resize handle. Dragging it edits destination width/height directly. If an object is still using Natural size, the first resize converts that state to Pixels. If it already uses Percent, resizing keeps percentage sizing.
+
+Direct resize also adjusts the stored anchored position so the top-left visual corner remains stable while the bottom-right handle moves.
+
+**Size = geometry. Scale = presentation transform.**
+
 ## Edit-to-replay authoring loop
 
 Changing any motion parameter replays **only the selected object** from the previously selected named state into the current state using the newly edited configuration.
@@ -93,6 +109,7 @@ Every object/state also exposes numeric and raw-CSS escape hatches:
 
 - anchored X/Y destination offsets;
 - horizontal/vertical anchor and pixel/percentage position mode;
+- natural, pixel or percentage destination width/height;
 - custom X/Y direction vector;
 - travel distance;
 - duration;
@@ -114,6 +131,7 @@ For the selected object and state the playground shows two views.
 This contains:
 
 - every semantic parameter as CSS custom properties;
+- destination width and height;
 - the destination transform;
 - depth-derived blur, opacity and scale;
 - z-index;
