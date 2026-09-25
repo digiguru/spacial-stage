@@ -250,23 +250,35 @@ summary:focus-visible {
 .selection-overlay[hidden] {
   display: none;
 }
-.selection-overlay::before,
-.selection-overlay::after {
+.selection-overlay::before {
   content: "";
   position: absolute;
+  top: -5px;
+  left: -5px;
   width: 7px;
   height: 7px;
   border: 2px solid var(--stage);
   border-radius: 50%;
   background: var(--acid);
 }
-.selection-overlay::before {
-  top: -5px;
-  left: -5px;
+.selection-resize-handle {
+  position: absolute;
+  right: -8px;
+  bottom: -8px;
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  border: 3px solid var(--stage);
+  border-radius: 50%;
+  background: var(--acid);
+  box-shadow: 0 2px 10px rgba(0,0,0,.22);
+  cursor: nwse-resize;
+  pointer-events: auto;
+  touch-action: none;
 }
-.selection-overlay::after {
-  right: -5px;
-  bottom: -5px;
+.selection-resize-handle:focus-visible {
+  outline: 3px solid rgba(216,255,99,.38);
+  outline-offset: 3px;
 }
 .selection-overlay-label {
   position: absolute;
@@ -527,7 +539,8 @@ summary:focus-visible {
 }
 .segmented label:has(input[value="custom"]) span { border-style: dashed; }
 
-.position-control-group {
+.position-control-group,
+.size-control-group {
   display: grid;
   gap: 13px;
 }
