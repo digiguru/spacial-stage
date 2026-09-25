@@ -4,6 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#171816" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <meta
       name="description"
       content="Spacial Stage — author named UI states and inspect the motion/CSS between them."
@@ -48,6 +49,9 @@
 
           <div id="stage" class="stage" data-stage data-active-state="home">
             <div class="stage-grid" aria-hidden="true"></div>
+            <div id="selectionOverlay" class="selection-overlay" aria-hidden="true">
+              <span id="selectionOverlayLabel" class="selection-overlay-label">Selected</span>
+            </div>
 
             <div id="stageContent" class="stage-content" data-stage-content>
               <button
@@ -233,14 +237,59 @@
                 </div>
               </fieldset>
 
+
+              <fieldset class="control-group position-control-group">
+                <legend>Position</legend>
+                <p class="control-help">Anchor the object to the stage, then store its drag offset as pixels or a percentage of the stage.</p>
+
+                <div class="position-control-section">
+                  <span class="position-control-label">Horizontal anchor</span>
+                  <div class="segmented position-segmented">
+                    <label><input type="radio" name="horizontalAnchor" value="left" /><span>Left</span></label>
+                    <label><input type="radio" name="horizontalAnchor" value="center" /><span>Centre</span></label>
+                    <label><input type="radio" name="horizontalAnchor" value="right" /><span>Right</span></label>
+                  </div>
+                </div>
+
+                <div class="position-control-section">
+                  <span class="position-control-label">Vertical anchor</span>
+                  <div class="segmented position-segmented">
+                    <label><input type="radio" name="verticalAnchor" value="top" /><span>Top</span></label>
+                    <label><input type="radio" name="verticalAnchor" value="center" /><span>Centre</span></label>
+                    <label><input type="radio" name="verticalAnchor" value="bottom" /><span>Bottom</span></label>
+                  </div>
+                </div>
+
+                <div class="position-control-section">
+                  <span class="position-control-label">Offset units</span>
+                  <div class="segmented position-segmented">
+                    <label><input type="radio" name="positionMode" value="absolute" /><span>Pixels</span></label>
+                    <label><input type="radio" name="positionMode" value="percent" /><span>Percent</span></label>
+                  </div>
+                </div>
+
+                <div class="position-values">
+                  <label>
+                    <span>X offset</span>
+                    <input type="number" name="positionX" step="1" />
+                    <small id="positionXUnit">px</small>
+                  </label>
+                  <label>
+                    <span>Y offset</span>
+                    <input type="number" name="positionY" step="1" />
+                    <small id="positionYUnit">px</small>
+                  </label>
+                </div>
+
+                <p class="position-drag-hint">Tip: drag the selected object directly on the stage. Its coordinates are recalculated from these anchors.</p>
+              </fieldset>
+
               <details class="custom-overrides" open>
                 <summary>
                   <span><strong>Custom / numeric overrides</strong><small>Always available, regardless of presets.</small></span>
                   <span aria-hidden="true">＋</span>
                 </summary>
                 <div class="override-grid">
-                  <label><span>Offset X</span><input type="number" name="offsetX" step="10" /><small>px</small></label>
-                  <label><span>Offset Y</span><input type="number" name="offsetY" step="10" /><small>px</small></label>
                   <label><span>Direction X</span><input type="number" name="customX" step="0.1" /><small>vector</small></label>
                   <label><span>Direction Y</span><input type="number" name="customY" step="0.1" /><small>vector</small></label>
                   <label><span>Distance</span><input type="range" name="distance" min="0" max="520" step="10" /><output data-output="distance"></output></label>

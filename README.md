@@ -41,6 +41,8 @@ The demo intentionally uses four different kinds of UI object:
 
 Each can be clicked directly on the stage or selected from the object toolbar and configured independently for the active state.
 
+The selected object is outlined by a separate presentation-layer overlay, so selection chrome stays sharp and visible even when the object itself is blurred, faded or sent into the background.
+
 ## Taxonomy under test
 
 | Axis | Current terms | Question it answers |
@@ -62,11 +64,35 @@ Shared + Slide + Overlay + Free + Background + Right
 
 These names are not considered final. The playground exists specifically to expose where the taxonomy feels awkward.
 
+## Position authoring
+
+Position is part of each object's destination state rather than an ad-hoc transform.
+
+Each object stores:
+
+- horizontal anchor: Left / Centre / Right;
+- vertical anchor: Top / Centre / Bottom;
+- offset units: Pixels / Percent;
+- X/Y offset from that anchor.
+
+Objects can be dragged directly on the stage. Dragging converts the visual destination back into the selected coordinate system, so percentage positioning stays percentage-based rather than silently becoming pixels.
+
+Changing anchor or unit mode preserves the visual position and recalculates the stored offsets.
+
+## Edit-to-replay authoring loop
+
+Changing any motion parameter replays **only the selected object** from the previously selected named state into the current state using the newly edited configuration.
+
+That makes the playground useful for riffing on individual parameters: adjust Reveal vs Fade, change depth, alter docking, tweak duration or edit a position and immediately see how that object reaches its destination.
+
+The full-state Replay button still animates every object together.
+
 ## Custom is always available
 
 Every object/state also exposes numeric and raw-CSS escape hatches:
 
-- X/Y destination offsets;
+- anchored X/Y destination offsets;
+- horizontal/vertical anchor and pixel/percentage position mode;
 - custom X/Y direction vector;
 - travel distance;
 - duration;

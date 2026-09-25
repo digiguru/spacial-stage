@@ -19,8 +19,11 @@ export const DEFAULT_SPEC = Object.freeze({
   coordination: "none",
   depth: "focus",
   direction: "auto",
-  offsetX: 0,
-  offsetY: 0,
+  horizontalAnchor: "center",
+  verticalAnchor: "center",
+  positionMode: "absolute",
+  positionX: 0,
+  positionY: 0,
   distance: 180,
   duration: 700,
   stagger: 80,
@@ -49,8 +52,11 @@ export function normaliseSpec(input = {}) {
   return {
     ...DEFAULT_SPEC,
     ...input,
-    offsetX: finiteNumber(input.offsetX, DEFAULT_SPEC.offsetX),
-    offsetY: finiteNumber(input.offsetY, DEFAULT_SPEC.offsetY),
+    horizontalAnchor: normaliseHorizontalAnchor(input.horizontalAnchor),
+    verticalAnchor: normaliseVerticalAnchor(input.verticalAnchor),
+    positionMode: input.positionMode === "percent" ? "percent" : "absolute",
+    positionX: finiteNumber(input.positionX, finiteNumber(input.offsetX, DEFAULT_SPEC.positionX)),
+    positionY: finiteNumber(input.positionY, finiteNumber(input.offsetY, DEFAULT_SPEC.positionY)),
     distance: finiteNumber(input.distance, DEFAULT_SPEC.distance),
     duration: finiteNumber(input.duration, DEFAULT_SPEC.duration),
     stagger: finiteNumber(input.stagger, DEFAULT_SPEC.stagger),
@@ -106,17 +112,57 @@ export function resolveDepth(specInput = {}) {
   };
 }
 
+export function resolvePosition(element, container, specInput = {}) {
+  const spec = normaliseSpec(specInput);
+  const metrics = elementMetrics(element, container);
+  const offsets = positionOffsets(metrics, spec);
+  const base = anchoredTarget(metrics, spec, offsets);
+
+  return {
+    x: base.left - metrics.elementLeft,
+    y: base.top - metrics.elementTop,
+    rotation: spec.attachment === "float" ? -0.6 : 0
+  };
+}
+
+export function positionValuesForCoordinates(
+  element,
+  container,
+  specInput = {},
+  { left = 0, top = 0 } = {}
+) {
+  const spec = normaliseSpec(specInput);
+  const metrics = elementMetrics(element, container);
+  const zeroOffsets = { x: 0, y: 0 };
+  const base = anchoredTarget(metrics, spec, zeroOffsets);
+
+  const xPixels = left - base.left;
+  const yPixels = top - base.top;
+
+  if (spec.positionMode === "percent") {
+    return {
+      positionX: metrics.stageWidth ? (xPixels / metrics.stageWidth) * 100 : 0,
+      positionY: metrics.stageHeight ? (yPixels / metrics.stageHeight) * 100 : 0
+    };
+  }
+
+  return {
+    positionX: xPixels,
+    positionY: yPixels
+  };
+}
+
 export function destinationFrame(element, container, specInput = {}) {
   const spec = normaliseSpec(specInput);
   const depth = resolveDepth(spec);
-  const attachment = resolveAttachment(element, container, spec);
+  const position = resolvePosition(element, container, spec);
 
   const frame = {
     transform: transform({
-      x: attachment.x + spec.offsetX,
-      y: attachment.y + spec.offsetY,
+      x: position.x,
+      y: position.y,
       scale: depth.scale,
-      rotation: attachment.rotation
+      rotation: position.rotation
     }),
     opacity: String(depth.opacity),
     filter: `blur(${depth.blur}px) saturate(1)`,
@@ -176,14 +222,20 @@ export function transitionFrames(element, container, fromSpecInput, toSpecInput)
   return [from, to];
 }
 
-export async function animateBetweenStates(element, container, fromSpec, toSpec, {
-  delay = 0,
-  reducedMotion = prefersReducedMotion()
-} = {}) {
+export async function animateBetweenStates(
+  element,
+  container,
+  fromSpec,
+  toSpec,
+  {
+    delay = 0,
+    reducedMotion = prefersReducedMotion()
+  } = {}
+) {
+  if (!element) return null;
+
   const target = destinationFrame(element, container, toSpec);
   const spec = normaliseSpec(toSpec);
-
-  if (!element) return null;
 
   if (reducedMotion || typeof element.animate !== "function") {
     applyFrame(element, target);
@@ -198,9 +250,20 @@ export async function animateBetweenStates(element, container, fromSpec, toSpec,
     fill: "forwards"
   });
 
-  await animation.finished.catch(() => {});
-  animation.cancel();
-  applyFrame(element, target);
+  let completed = false;
+
+  try {
+    await animation.finished;
+    completed = true;
+  } catch {
+    completed = false;
+  }
+
+  if (completed) {
+    animation.cancel();
+    applyFrame(element, target);
+  }
+
   return animation;
 }
 
@@ -212,7 +275,11 @@ export function layoutCompanionFrames(specInput = {}) {
   if (spec.layout === "push") {
     return [
       { transform: "translate3d(0px, 0px, 0)", opacity: 1, filter: "blur(0px)" },
-      { transform: `translate3d(${-vector.x * amount}px, ${-vector.y * amount}px, 0)`, opacity: 1, filter: "blur(0px)" },
+      {
+        transform: `translate3d(${-vector.x * amount}px, ${-vector.y * amount}px, 0)`,
+        opacity: 1,
+        filter: "blur(0px)"
+      },
       { transform: "translate3d(0px, 0px, 0)", opacity: 1, filter: "blur(0px)" }
     ];
   }
@@ -249,6 +316,7 @@ export const buildLayoutFrames = layoutCompanionFrames;
 
 export function applyFrame(element, frame) {
   if (!element || !frame) return;
+
   Object.entries(frame).forEach(([property, value]) => {
     if (value === undefined || value === null) return;
     element.style[property] = String(value);
@@ -268,6 +336,7 @@ export function cssForElement({
 } = {}) {
   const spec = normaliseSpec(specInput);
   const depth = resolveDepth(spec);
+  const positionUnit = spec.positionMode === "percent" ? "%" : "px";
   const lines = [
     `${selector}[data-stage-state="${cssEscape(stateName)}"] {`,
     `  --stage-transition: ${spec.transition};`,
@@ -276,11 +345,14 @@ export function cssForElement({
     `  --stage-coordination: ${spec.coordination};`,
     `  --stage-depth: ${spec.depth};`,
     `  --stage-direction: ${spec.direction};`,
+    `  --stage-anchor-x: ${spec.horizontalAnchor};`,
+    `  --stage-anchor-y: ${spec.verticalAnchor};`,
+    `  --stage-position-mode: ${spec.positionMode};`,
+    `  --stage-position-x: ${trimNumber(spec.positionX)}${positionUnit};`,
+    `  --stage-position-y: ${trimNumber(spec.positionY)}${positionUnit};`,
     `  --stage-distance: ${spec.distance}px;`,
     `  --stage-duration: ${spec.duration}ms;`,
     `  --stage-stagger: ${spec.stagger}ms;`,
-    `  --stage-offset-x: ${spec.offsetX}px;`,
-    `  --stage-offset-y: ${spec.offsetY}px;`,
     `  --stage-blur: ${depth.blur}px;`,
     `  --stage-scale: ${trimNumber(depth.scale)};`,
     `  --stage-opacity: ${trimNumber(depth.opacity)};`,
@@ -295,7 +367,6 @@ export function cssForElement({
     );
   } else {
     lines.push(
-      "  transform: translate3d(var(--stage-offset-x), var(--stage-offset-y), 0) scale(var(--stage-scale));",
       "  filter: blur(var(--stage-blur));",
       "  opacity: var(--stage-opacity);"
     );
@@ -328,19 +399,25 @@ export function cssForParent({
     "}"
   ];
 
+  lines.push(
+    "",
+    "/* Anchored position is resolved against the stage containing block. */",
+    `${stageSelector} ${objectSelector} {`,
+    "  position: absolute;",
+    "}"
+  );
+
   if (spec.attachment === "dock") {
     lines.push(
       "",
-      `/* Dock requires a positioned containing block. Edge: ${resolvedDirectionName(spec)}. */`,
-      `${stageSelector} ${objectSelector} {`,
-      "  position: absolute;",
-      "}"
+      `/* Dock additionally snaps one axis to the ${resolvedDirectionName(spec)} edge. */`
     );
   }
 
   if (spec.layout !== "overlay") {
     const vector = resolveDirection(spec);
     const amount = Math.min(Math.max(spec.distance * 0.34, 44), 150);
+
     lines.push("", `/* Layout effect: ${spec.layout}. */`);
 
     if (spec.layout === "push") {
@@ -405,13 +482,17 @@ export function cssForParent({
 
 export function motionMarkup(specInput = {}) {
   const spec = normaliseSpec(specInput);
+
   return [
     `data-stage-transition="${spec.transition}"`,
     `data-stage-layout="${spec.layout}"`,
     `data-stage-attachment="${spec.attachment}"`,
     `data-stage-coordination="${spec.coordination}"`,
     `data-stage-depth="${spec.depth}"`,
-    `data-stage-direction="${spec.direction}"`
+    `data-stage-direction="${spec.direction}"`,
+    `data-stage-anchor-x="${spec.horizontalAnchor}"`,
+    `data-stage-anchor-y="${spec.verticalAnchor}"`,
+    `data-stage-position-mode="${spec.positionMode}"`
   ].join("\n");
 }
 
@@ -419,62 +500,79 @@ export function prefersReducedMotion(win = globalThis.window) {
   return Boolean(win?.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches);
 }
 
-function resolveAttachment(element, container, spec) {
-  const direction = resolvedDirectionName(spec);
+function elementMetrics(element, container) {
+  return {
+    stageWidth: container?.clientWidth || 0,
+    stageHeight: container?.clientHeight || 0,
+    elementWidth: element?.offsetWidth || 0,
+    elementHeight: element?.offsetHeight || 0,
+    elementLeft: element?.offsetLeft || 0,
+    elementTop: element?.offsetTop || 0
+  };
+}
 
-  if (!element || !container || spec.attachment === "free" || spec.attachment === "pin" || spec.attachment === "custom") {
-    return { x: 0, y: 0, rotation: 0 };
-  }
-
-  if (spec.attachment === "float") {
-    return { x: 0, y: -18, rotation: -0.6 };
-  }
-
-  if (spec.attachment !== "dock") {
-    return { x: 0, y: 0, rotation: 0 };
-  }
-
-  const gutter = 22;
-  const elementLeft = element.offsetLeft;
-  const elementTop = element.offsetTop;
-  const width = element.offsetWidth;
-  const height = element.offsetHeight;
-  const stageWidth = container.clientWidth;
-  const stageHeight = container.clientHeight;
-
-  if (direction === "right") {
+function positionOffsets(metrics, spec) {
+  if (spec.positionMode === "percent") {
     return {
-      x: stageWidth - gutter - width - elementLeft,
-      y: stageHeight / 2 - height / 2 - elementTop,
-      rotation: 0
-    };
-  }
-
-  if (direction === "top") {
-    return {
-      x: stageWidth / 2 - width / 2 - elementLeft,
-      y: gutter - elementTop,
-      rotation: 0
-    };
-  }
-
-  if (direction === "bottom") {
-    return {
-      x: stageWidth / 2 - width / 2 - elementLeft,
-      y: stageHeight - gutter - height - elementTop,
-      rotation: 0
+      x: metrics.stageWidth * (spec.positionX / 100),
+      y: metrics.stageHeight * (spec.positionY / 100)
     };
   }
 
   return {
-    x: gutter - elementLeft,
-    y: stageHeight / 2 - height / 2 - elementTop,
-    rotation: 0
+    x: spec.positionX,
+    y: spec.positionY
   };
+}
+
+function anchoredTarget(metrics, spec, offsets) {
+  let left = horizontalAnchorLeft(metrics, spec.horizontalAnchor) + offsets.x;
+  let top = verticalAnchorTop(metrics, spec.verticalAnchor) + offsets.y;
+
+  if (spec.attachment === "dock") {
+    const gutter = 22;
+    const direction = resolvedDirectionName(spec);
+
+    if (direction === "left") left = gutter + offsets.x;
+    if (direction === "right") {
+      left = metrics.stageWidth - gutter - metrics.elementWidth + offsets.x;
+    }
+    if (direction === "top") top = gutter + offsets.y;
+    if (direction === "bottom") {
+      top = metrics.stageHeight - gutter - metrics.elementHeight + offsets.y;
+    }
+  }
+
+  if (spec.attachment === "float") {
+    top -= 18;
+  }
+
+  return { left, top };
+}
+
+function horizontalAnchorLeft(metrics, anchor) {
+  if (anchor === "left") return 0;
+  if (anchor === "right") return metrics.stageWidth - metrics.elementWidth;
+  return metrics.stageWidth / 2 - metrics.elementWidth / 2;
+}
+
+function verticalAnchorTop(metrics, anchor) {
+  if (anchor === "top") return 0;
+  if (anchor === "bottom") return metrics.stageHeight - metrics.elementHeight;
+  return metrics.stageHeight / 2 - metrics.elementHeight / 2;
+}
+
+function normaliseHorizontalAnchor(value) {
+  return value === "left" || value === "right" ? value : "center";
+}
+
+function normaliseVerticalAnchor(value) {
+  return value === "top" || value === "bottom" ? value : "center";
 }
 
 function parseCustomCss(cssText) {
   if (!cssText?.trim() || typeof document === "undefined") return {};
+
   const style = document.createElement("div").style;
   style.cssText = cssText;
   const result = {};
@@ -513,8 +611,13 @@ function normaliseVector(vector) {
   const x = finiteNumber(vector?.x, 0);
   const y = finiteNumber(vector?.y, 0);
   const length = Math.hypot(x, y);
+
   if (!length) return { x: -1, y: 0 };
-  return { x: x / length, y: y / length };
+
+  return {
+    x: x / length,
+    y: y / length
+  };
 }
 
 function finiteNumber(value, fallback) {

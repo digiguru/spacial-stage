@@ -6,29 +6,48 @@ import {
   cssForParent,
   layoutCompanionFrames,
   normaliseSpec,
+  positionValuesForCoordinates,
   resolveDepth,
   resolveDirection,
+  resolvePosition,
   resolvedDirectionName
 } from "../src/spacial-stage.js";
 
-test("normalises named-state specs including offsets and custom vector", () => {
+test("normalises named-state specs including anchored position and custom vector", () => {
   const spec = normaliseSpec({
     role: "shared",
-    offsetX: "240",
-    offsetY: "-90",
+    horizontalAnchor: "right",
+    verticalAnchor: "bottom",
+    positionMode: "percent",
+    positionX: "-12.5",
+    positionY: "7.25",
     duration: "900",
     scale: "1.2",
     customVector: { x: "3", y: "4" }
   });
 
-  assert.equal(spec.offsetX, 240);
-  assert.equal(spec.offsetY, -90);
+  assert.equal(spec.horizontalAnchor, "right");
+  assert.equal(spec.verticalAnchor, "bottom");
+  assert.equal(spec.positionMode, "percent");
+  assert.equal(spec.positionX, -12.5);
+  assert.equal(spec.positionY, 7.25);
   assert.equal(spec.duration, 900);
   assert.equal(spec.scale, 1.2);
   assert.deepEqual(spec.customVector, { x: 3, y: 4 });
 });
 
-test("auto and custom directions resolve independently from destination offsets", () => {
+test("legacy offsets migrate into absolute anchored position values", () => {
+  const spec = normaliseSpec({
+    offsetX: 120,
+    offsetY: -40
+  });
+
+  assert.equal(spec.positionMode, "absolute");
+  assert.equal(spec.positionX, 120);
+  assert.equal(spec.positionY, -40);
+});
+
+test("auto and custom directions resolve independently from destination position", () => {
   assert.deepEqual(resolveDirection({ role: "panel", direction: "auto" }), { x: -1, y: 0 });
   assert.equal(resolvedDirectionName({ role: "shared", direction: "auto" }), "right");
 
@@ -42,15 +61,96 @@ test("auto and custom directions resolve independently from destination offsets"
 });
 
 test("depth remains a destination property independent of transition and layout", () => {
-  const background = resolveDepth({ depth: "background", transition: "reveal", layout: "push" });
-  const focus = resolveDepth({ depth: "focus", transition: "collapse", layout: "overlay" });
+  const background = resolveDepth({
+    depth: "background",
+    transition: "reveal",
+    layout: "push"
+  });
+  const focus = resolveDepth({
+    depth: "focus",
+    transition: "collapse",
+    layout: "overlay"
+  });
 
   assert.ok(background.blur > focus.blur);
   assert.ok(background.opacity < focus.opacity);
   assert.equal(focus.opacity, 1);
 });
 
-test("element CSS exposes every authored state axis", () => {
+test("center anchored absolute positioning resolves against the stage", () => {
+  const container = { clientWidth: 1000, clientHeight: 600 };
+  const element = {
+    offsetWidth: 200,
+    offsetHeight: 100,
+    offsetLeft: 0,
+    offsetTop: 0
+  };
+
+  const position = resolvePosition(element, container, {
+    horizontalAnchor: "center",
+    verticalAnchor: "center",
+    positionMode: "absolute",
+    positionX: 20,
+    positionY: -10
+  });
+
+  assert.equal(position.x, 420);
+  assert.equal(position.y, 240);
+});
+
+test("percentage positioning offsets from the selected anchor", () => {
+  const container = { clientWidth: 1000, clientHeight: 600 };
+  const element = {
+    offsetWidth: 200,
+    offsetHeight: 100,
+    offsetLeft: 0,
+    offsetTop: 0
+  };
+
+  const position = resolvePosition(element, container, {
+    horizontalAnchor: "right",
+    verticalAnchor: "bottom",
+    positionMode: "percent",
+    positionX: -10,
+    positionY: -10
+  });
+
+  assert.equal(position.x, 700);
+  assert.equal(position.y, 440);
+});
+
+test("drag coordinates round-trip through percentage anchor values", () => {
+  const container = { clientWidth: 1000, clientHeight: 600 };
+  const element = {
+    offsetWidth: 200,
+    offsetHeight: 100,
+    offsetLeft: 30,
+    offsetTop: 50
+  };
+  const spec = {
+    horizontalAnchor: "center",
+    verticalAnchor: "bottom",
+    positionMode: "percent"
+  };
+
+  const values = positionValuesForCoordinates(
+    element,
+    container,
+    spec,
+    { left: 510, top: 410 }
+  );
+
+  const resolved = resolvePosition(
+    element,
+    container,
+    { ...spec, ...values }
+  );
+
+  assert.ok(Math.abs((element.offsetLeft + resolved.x) - 510) < 0.001);
+  assert.ok(Math.abs((element.offsetTop + resolved.y) - 410) < 0.001);
+});
+
+test("element CSS exposes every authored state axis including position", () => {
   const css = cssForElement({
     selector: '[data-object="svg"]',
     stateName: "cloud",
@@ -62,11 +162,14 @@ test("element CSS exposes every authored state axis", () => {
       coordination: "follow",
       depth: "background",
       direction: "left",
+      horizontalAnchor: "left",
+      verticalAnchor: "center",
+      positionMode: "percent",
+      positionX: -18,
+      positionY: 7.5,
       distance: 320,
       duration: 840,
-      stagger: 90,
-      offsetX: -280,
-      offsetY: 70
+      stagger: 90
     }
   });
 
@@ -77,7 +180,11 @@ test("element CSS exposes every authored state axis", () => {
   assert.match(css, /--stage-coordination: follow/);
   assert.match(css, /--stage-depth: background/);
   assert.match(css, /--stage-direction: left/);
-  assert.match(css, /--stage-offset-x: -280px/);
+  assert.match(css, /--stage-anchor-x: left/);
+  assert.match(css, /--stage-anchor-y: center/);
+  assert.match(css, /--stage-position-mode: percent/);
+  assert.match(css, /--stage-position-x: -18%/);
+  assert.match(css, /--stage-position-y: 7.5%/);
 });
 
 test("parent CSS explains layout and coordination requirements", () => {
@@ -97,7 +204,8 @@ test("parent CSS explains layout and coordination requirements", () => {
   });
 
   assert.match(css, /position: relative/);
-  assert.match(css, /Dock requires a positioned containing block/);
+  assert.match(css, /Anchored position is resolved against the stage/);
+  assert.match(css, /Dock additionally snaps one axis/);
   assert.match(css, /Layout effect: push/);
   assert.match(css, /--stage-layout-x/);
   assert.match(css, /transition-delay/);

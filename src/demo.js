@@ -6,10 +6,12 @@ import {
   cssForParent,
   destinationFrame,
   layoutCompanionFrames,
-  normaliseSpec
+  normaliseSpec,
+  positionValuesForCoordinates,
+  resolvePosition
 } from "./spacial-stage.js";
 
-const STORAGE_KEY = "spacial-stage-state-authoring-v1";
+const STORAGE_KEY = "spacial-stage-state-authoring-v3";
 
 const stage = document.querySelector("#stage");
 const stageContent = document.querySelector("#stageContent");
@@ -27,6 +29,10 @@ const cssTitle = document.querySelector("#cssTitle");
 const elementCss = document.querySelector("#elementCss");
 const parentCss = document.querySelector("#parentCss");
 const stateDirtyBadge = document.querySelector("#stateDirtyBadge");
+const selectionOverlay = document.querySelector("#selectionOverlay");
+const selectionOverlayLabel = document.querySelector("#selectionOverlayLabel");
+const positionXUnit = document.querySelector("#positionXUnit");
+const positionYUnit = document.querySelector("#positionYUnit");
 
 const OBJECTS = Object.freeze({
   svg: {
@@ -59,8 +65,11 @@ const base = (role, overrides = {}) => normaliseSpec({
   coordination: "none",
   depth: "focus",
   direction: "auto",
-  offsetX: 0,
-  offsetY: 0,
+  horizontalAnchor: "center",
+  verticalAnchor: "center",
+  positionMode: "absolute",
+  positionX: 0,
+  positionY: 0,
   distance: 180,
   duration: 700,
   stagger: 80,
@@ -83,8 +92,11 @@ const DEFAULT_STATES = [
         layout: "overlay",
         depth: "background",
         direction: "right",
-        offsetX: 280,
-        offsetY: 145,
+        horizontalAnchor: "right",
+        verticalAnchor: "bottom",
+        positionMode: "percent",
+        positionX: -7,
+        positionY: -7,
         distance: 340,
         duration: 840,
         scale: 1.08
@@ -92,10 +104,14 @@ const DEFAULT_STATES = [
       panel: base("panel", {
         transition: "reveal",
         layout: "overlay",
-        attachment: "dock",
+        attachment: "free",
         depth: "background",
         direction: "left",
-        offsetX: -150,
+        horizontalAnchor: "left",
+        verticalAnchor: "center",
+        positionMode: "absolute",
+        positionX: -165,
+        positionY: 0,
         opacity: 0.45,
         duration: 600
       }),
@@ -104,8 +120,11 @@ const DEFAULT_STATES = [
         layout: "overlay",
         depth: "focus",
         direction: "left",
-        offsetX: -185,
-        offsetY: -82,
+        horizontalAnchor: "left",
+        verticalAnchor: "center",
+        positionMode: "percent",
+        positionX: 8,
+        positionY: -12,
         distance: 130,
         duration: 620
       }),
@@ -116,8 +135,11 @@ const DEFAULT_STATES = [
         coordination: "stagger",
         depth: "foreground",
         direction: "bottom",
-        offsetX: 235,
-        offsetY: 135,
+        horizontalAnchor: "right",
+        verticalAnchor: "bottom",
+        positionMode: "percent",
+        positionX: -5,
+        positionY: -8,
         distance: 120,
         duration: 560,
         stagger: 90,
@@ -135,8 +157,11 @@ const DEFAULT_STATES = [
         layout: "overlay",
         depth: "focus",
         direction: "left",
-        offsetX: 10,
-        offsetY: 38,
+        horizontalAnchor: "center",
+        verticalAnchor: "center",
+        positionMode: "percent",
+        positionX: 4,
+        positionY: 5,
         distance: 300,
         duration: 800,
         scale: 0.9
@@ -147,6 +172,11 @@ const DEFAULT_STATES = [
         attachment: "dock",
         depth: "foreground",
         direction: "left",
+        horizontalAnchor: "left",
+        verticalAnchor: "center",
+        positionMode: "absolute",
+        positionX: 0,
+        positionY: 0,
         distance: 260,
         duration: 720,
         scale: 0.98
@@ -156,8 +186,11 @@ const DEFAULT_STATES = [
         layout: "overlay",
         depth: "background",
         direction: "top",
-        offsetX: 235,
-        offsetY: -165,
+        horizontalAnchor: "right",
+        verticalAnchor: "top",
+        positionMode: "percent",
+        positionX: -8,
+        positionY: 7,
         distance: 150,
         duration: 560,
         opacity: 0.72,
@@ -170,8 +203,11 @@ const DEFAULT_STATES = [
         coordination: "stagger",
         depth: "foreground",
         direction: "right",
-        offsetX: 250,
-        offsetY: -110,
+        horizontalAnchor: "right",
+        verticalAnchor: "top",
+        positionMode: "percent",
+        positionX: -6,
+        positionY: 10,
         distance: 150,
         duration: 540,
         stagger: 85,
@@ -188,8 +224,11 @@ const DEFAULT_STATES = [
         layout: "overlay",
         depth: "background",
         direction: "left",
-        offsetX: -315,
-        offsetY: 65,
+        horizontalAnchor: "left",
+        verticalAnchor: "center",
+        positionMode: "percent",
+        positionX: -18,
+        positionY: -8,
         distance: 350,
         duration: 860,
         scale: 1.18
@@ -200,6 +239,11 @@ const DEFAULT_STATES = [
         attachment: "dock",
         depth: "foreground",
         direction: "left",
+        horizontalAnchor: "left",
+        verticalAnchor: "center",
+        positionMode: "absolute",
+        positionX: 0,
+        positionY: 0,
         distance: 250,
         duration: 720
       }),
@@ -208,8 +252,11 @@ const DEFAULT_STATES = [
         layout: "overlay",
         depth: "focus",
         direction: "top",
-        offsetX: 175,
-        offsetY: -145,
+        horizontalAnchor: "right",
+        verticalAnchor: "top",
+        positionMode: "percent",
+        positionX: -6,
+        positionY: 8,
         distance: 170,
         duration: 620,
         scale: 0.92
@@ -221,8 +268,11 @@ const DEFAULT_STATES = [
         coordination: "follow",
         depth: "foreground",
         direction: "right",
-        offsetX: 255,
-        offsetY: 135,
+        horizontalAnchor: "right",
+        verticalAnchor: "bottom",
+        positionMode: "percent",
+        positionX: -5,
+        positionY: -7,
         distance: 180,
         duration: 580,
         stagger: 100,
@@ -238,10 +288,14 @@ let previousStateId = model.previousStateId || null;
 let selectedObjectId = model.selectedObjectId || "svg";
 let isAnimating = false;
 let formSyncing = false;
+let replayTimer = null;
+let replaySequence = 0;
+let dragState = null;
 
 function loadModel() {
   try {
     const parsed = JSON.parse(localStorage.getItem(STORAGE_KEY));
+
     if (parsed?.states?.length) {
       return {
         states: parsed.states.map(normaliseState),
@@ -293,6 +347,22 @@ function activeSpec(objectId = selectedObjectId) {
   return activeState().objects[objectId];
 }
 
+function replaySourceState() {
+  const explicit = stateById(previousStateId);
+
+  if (explicit && explicit.id !== activeStateId) {
+    return explicit;
+  }
+
+  const currentIndex = model.states.findIndex((state) => state.id === activeStateId);
+
+  if (currentIndex < 0 || model.states.length < 2) {
+    return null;
+  }
+
+  return model.states[(currentIndex - 1 + model.states.length) % model.states.length];
+}
+
 function renderStateTabs() {
   stateTabs.replaceChildren();
 
@@ -325,6 +395,7 @@ function renderObjectTabs() {
 
 function selectObject(objectId) {
   if (!OBJECTS[objectId]) return;
+
   selectedObjectId = objectId;
   saveModel();
   renderObjectTabs();
@@ -332,10 +403,6 @@ function selectObject(objectId) {
 }
 
 function syncSelection() {
-  for (const [objectId, object] of Object.entries(OBJECTS)) {
-    object.element.classList.toggle("is-selected", objectId === selectedObjectId);
-  }
-
   const state = activeState();
   const object = OBJECTS[selectedObjectId];
 
@@ -344,9 +411,41 @@ function syncSelection() {
   selectedStateName.textContent = state.name;
   stageStateLabel.textContent = state.name;
   cssTitle.textContent = object.name + " · " + state.name;
+  selectionOverlayLabel.textContent = object.name;
 
   setForm(activeSpec());
   updateCssInspector();
+  updateSelectionOverlay();
+}
+
+function updateSelectionOverlay() {
+  const object = OBJECTS[selectedObjectId];
+
+  if (!object?.element) {
+    selectionOverlay.hidden = true;
+    return;
+  }
+
+  const objectRect = object.element.getBoundingClientRect();
+  const stageRect = stage.getBoundingClientRect();
+
+  if (!objectRect.width || !objectRect.height) {
+    selectionOverlay.hidden = true;
+    return;
+  }
+
+  selectionOverlay.hidden = false;
+  selectionOverlay.style.left = (objectRect.left - stageRect.left) + "px";
+  selectionOverlay.style.top = (objectRect.top - stageRect.top) + "px";
+  selectionOverlay.style.width = objectRect.width + "px";
+  selectionOverlay.style.height = objectRect.height + "px";
+  selectionOverlay.style.borderRadius =
+    getComputedStyle(object.element).borderRadius || "12px";
+}
+
+function selectionOverlayLoop() {
+  updateSelectionOverlay();
+  requestAnimationFrame(selectionOverlayLoop);
 }
 
 async function switchState(nextStateId, { force = false } = {}) {
@@ -354,6 +453,10 @@ async function switchState(nextStateId, { force = false } = {}) {
 
   const nextState = stateById(nextStateId);
   if (!nextState) return;
+
+  clearTimeout(replayTimer);
+  replaySequence += 1;
+  cancelObjectAnimations();
 
   const fromState = activeState();
   previousStateId = activeStateId;
@@ -413,13 +516,21 @@ async function animateAllObjects(fromState, toState) {
 }
 
 function coordinationDelay(spec, index) {
-  if (spec.coordination === "follow") return index * Math.min(spec.stagger, 140);
-  if (spec.coordination === "swap") return index % 2 === 0 ? 0 : Math.round(spec.stagger * 0.55);
+  if (spec.coordination === "follow") {
+    return index * Math.min(spec.stagger, 140);
+  }
+
+  if (spec.coordination === "swap") {
+    return index % 2 === 0 ? 0 : Math.round(spec.stagger * 0.55);
+  }
+
   return 0;
 }
 
 function animateCardChildren(spec) {
   [...OBJECTS.cards.element.querySelectorAll(".floating-card")].forEach((card, index) => {
+    card.getAnimations().forEach((animation) => animation.cancel());
+
     card.animate(
       [
         { transform: "translateY(24px)", opacity: 0 },
@@ -437,14 +548,20 @@ function animateCardChildren(spec) {
 
 async function animateStageLayout(spec) {
   const frames = layoutCompanionFrames(spec);
+
   if (!frames || !stageContent.animate) return null;
+
+  stageContent.getAnimations().forEach((animation) => animation.cancel());
 
   const animation = stageContent.animate(frames, {
     duration: spec.duration,
     easing: spec.easing
   });
 
-  await animation.finished.catch(() => {});
+  try {
+    await animation.finished;
+  } catch {}
+
   return animation;
 }
 
@@ -457,20 +574,20 @@ function applyStateImmediately(state) {
 
   stage.dataset.activeState = state.id;
   stageStateLabel.textContent = state.name;
+  updateSelectionOverlay();
 }
 
 async function replayTransition() {
   if (isAnimating) return;
 
   const targetState = activeState();
-  let fromState = stateById(previousStateId);
-
-  if (!fromState || fromState.id === targetState.id) {
-    const currentIndex = model.states.findIndex((state) => state.id === targetState.id);
-    fromState = model.states[(currentIndex - 1 + model.states.length) % model.states.length];
-  }
+  const fromState = replaySourceState();
 
   if (!fromState || fromState.id === targetState.id) return;
+
+  clearTimeout(replayTimer);
+  replaySequence += 1;
+  cancelObjectAnimations();
 
   applyStateImmediately(fromState);
   await nextFrame();
@@ -493,7 +610,17 @@ function setForm(specInput) {
   const spec = normaliseSpec(specInput);
   formSyncing = true;
 
-  for (const key of ["transition", "layout", "attachment", "coordination", "depth", "direction"]) {
+  for (const key of [
+    "transition",
+    "layout",
+    "attachment",
+    "coordination",
+    "depth",
+    "direction",
+    "horizontalAnchor",
+    "verticalAnchor",
+    "positionMode"
+  ]) {
     const radio =
       form.querySelector(`input[name="${key}"][value="${spec[key]}"]`)
       || form.querySelector(`input[name="${key}"][value="custom"]`);
@@ -501,8 +628,8 @@ function setForm(specInput) {
     if (radio) radio.checked = true;
   }
 
-  form.elements.offsetX.value = spec.offsetX;
-  form.elements.offsetY.value = spec.offsetY;
+  form.elements.positionX.value = formatPositionNumber(spec.positionX, spec.positionMode);
+  form.elements.positionY.value = formatPositionNumber(spec.positionY, spec.positionMode);
   form.elements.customX.value = spec.customVector.x;
   form.elements.customY.value = spec.customVector.y;
   form.elements.distance.value = spec.distance;
@@ -515,6 +642,7 @@ function setForm(specInput) {
   form.elements.customCss.value = spec.customCss;
 
   syncOutputs();
+  syncPositionUnits(spec.positionMode);
   formSyncing = false;
 }
 
@@ -528,8 +656,11 @@ function readForm() {
     coordination: form.elements.coordination.value,
     depth: form.elements.depth.value,
     direction: form.elements.direction.value,
-    offsetX: Number(form.elements.offsetX.value),
-    offsetY: Number(form.elements.offsetY.value),
+    horizontalAnchor: form.elements.horizontalAnchor.value,
+    verticalAnchor: form.elements.verticalAnchor.value,
+    positionMode: form.elements.positionMode.value,
+    positionX: Number(form.elements.positionX.value),
+    positionY: Number(form.elements.positionY.value),
     customVector: {
       x: Number(form.elements.customX.value),
       y: Number(form.elements.customY.value)
@@ -545,28 +676,104 @@ function readForm() {
   });
 }
 
-async function updateSelectedSpec() {
-  if (formSyncing) return;
+function updateSelectedSpec(event) {
+  if (formSyncing || dragState) return;
 
   const state = activeState();
+  const object = OBJECTS[selectedObjectId];
   const oldSpec = state.objects[selectedObjectId];
-  const newSpec = readForm();
+  let newSpec = readForm();
+
+  if (preservesVisualPosition(event?.target?.name)) {
+    const resolved = resolvePosition(object.element, stage, oldSpec);
+    const currentLeft = object.element.offsetLeft + resolved.x;
+    const currentTop = object.element.offsetTop + resolved.y;
+    const converted = positionValuesForCoordinates(
+      object.element,
+      stage,
+      newSpec,
+      { left: currentLeft, top: currentTop }
+    );
+
+    newSpec = normaliseSpec({
+      ...newSpec,
+      ...converted
+    });
+
+    formSyncing = true;
+    form.elements.positionX.value = formatPositionNumber(newSpec.positionX, newSpec.positionMode);
+    form.elements.positionY.value = formatPositionNumber(newSpec.positionY, newSpec.positionMode);
+    formSyncing = false;
+  }
+
   state.objects[selectedObjectId] = newSpec;
 
   syncOutputs();
+  syncPositionUnits(newSpec.positionMode);
   saveModel();
   updateCssInspector();
+  scheduleSelectedReplay();
+}
+
+function preservesVisualPosition(fieldName) {
+  return fieldName === "horizontalAnchor"
+    || fieldName === "verticalAnchor"
+    || fieldName === "positionMode";
+}
+
+function scheduleSelectedReplay() {
+  clearTimeout(replayTimer);
+
+  replayTimer = setTimeout(() => {
+    void replaySelectedObjectFromPrevious();
+  }, 70);
+}
+
+async function replaySelectedObjectFromPrevious() {
+  const sourceState = replaySourceState();
+
+  if (!sourceState || sourceState.id === activeStateId) return;
 
   const object = OBJECTS[selectedObjectId];
+  const sourceSpec = sourceState.objects[selectedObjectId];
+  const targetSpec = activeSpec();
+  const sequence = ++replaySequence;
 
-  await animateBetweenStates(object.element, stage, oldSpec, {
-    ...newSpec,
-    duration: Math.min(newSpec.duration, 300)
-  });
+  object.element.getAnimations().forEach((animation) => animation.cancel());
 
-  if (selectedObjectId === "cards" && newSpec.coordination === "stagger") {
-    animateCardChildren(newSpec);
+  if (selectedObjectId === "cards") {
+    object.element.querySelectorAll(".floating-card").forEach((card) => {
+      card.getAnimations().forEach((animation) => animation.cancel());
+    });
   }
+
+  applyFrame(
+    object.element,
+    destinationFrame(object.element, stage, sourceSpec)
+  );
+
+  await nextFrame();
+
+  if (sequence !== replaySequence) return;
+
+  const jobs = [
+    animateBetweenStates(
+      object.element,
+      stage,
+      sourceSpec,
+      targetSpec
+    )
+  ];
+
+  if (targetSpec.layout !== "overlay") {
+    jobs.push(animateStageLayout(targetSpec));
+  }
+
+  if (selectedObjectId === "cards" && targetSpec.coordination === "stagger") {
+    animateCardChildren(targetSpec);
+  }
+
+  await Promise.all(jobs);
 }
 
 function updateCssInspector() {
@@ -602,8 +809,17 @@ function syncOutputs() {
 
   for (const [name, format] of Object.entries(formats)) {
     const output = document.querySelector(`[data-output="${name}"]`);
-    if (output) output.value = format(form.elements[name].value);
+
+    if (output) {
+      output.value = format(form.elements[name].value);
+    }
   }
+}
+
+function syncPositionUnits(positionMode) {
+  const unit = positionMode === "percent" ? "%" : "px";
+  positionXUnit.textContent = unit;
+  positionYUnit.textContent = unit;
 }
 
 function addState() {
@@ -645,6 +861,10 @@ function uniqueStateId(baseId) {
 function resetDemo() {
   if (!window.confirm("Reset the playground back to the example Home, Room and Cloud states?")) return;
 
+  clearTimeout(replayTimer);
+  replaySequence += 1;
+  cancelObjectAnimations();
+
   model = {
     states: structuredClone(DEFAULT_STATES),
     activeStateId: "home",
@@ -664,6 +884,112 @@ function resetDemo() {
   saveModel();
 }
 
+function beginDrag(event, objectId) {
+  if (event.button !== undefined && event.button !== 0) return;
+
+  event.preventDefault();
+  event.stopPropagation();
+
+  selectObject(objectId);
+
+  const object = OBJECTS[objectId];
+  const spec = activeState().objects[objectId];
+  const resolved = resolvePosition(object.element, stage, spec);
+
+  object.element.getAnimations().forEach((animation) => animation.cancel());
+  clearTimeout(replayTimer);
+  replaySequence += 1;
+
+  dragState = {
+    objectId,
+    pointerId: event.pointerId,
+    startClientX: event.clientX,
+    startClientY: event.clientY,
+    startLeft: object.element.offsetLeft + resolved.x,
+    startTop: object.element.offsetTop + resolved.y,
+    moved: false
+  };
+
+  stage.classList.add("is-dragging");
+  object.element.classList.add("is-dragging");
+  selectionOverlayLabel.textContent = "Dragging · " + object.name;
+
+  object.element.setPointerCapture?.(event.pointerId);
+}
+
+function moveDrag(event) {
+  if (!dragState || event.pointerId !== dragState.pointerId) return;
+
+  const object = OBJECTS[dragState.objectId];
+  const state = activeState();
+  const spec = state.objects[dragState.objectId];
+  const deltaX = event.clientX - dragState.startClientX;
+  const deltaY = event.clientY - dragState.startClientY;
+
+  if (Math.abs(deltaX) > 2 || Math.abs(deltaY) > 2) {
+    dragState.moved = true;
+  }
+
+  const values = positionValuesForCoordinates(
+    object.element,
+    stage,
+    spec,
+    {
+      left: dragState.startLeft + deltaX,
+      top: dragState.startTop + deltaY
+    }
+  );
+
+  const nextSpec = normaliseSpec({
+    ...spec,
+    positionX: values.positionX,
+    positionY: values.positionY
+  });
+
+  state.objects[dragState.objectId] = nextSpec;
+
+  applyFrame(
+    object.element,
+    destinationFrame(object.element, stage, nextSpec)
+  );
+
+  if (dragState.objectId === selectedObjectId) {
+    formSyncing = true;
+    form.elements.positionX.value = formatPositionNumber(nextSpec.positionX, nextSpec.positionMode);
+    form.elements.positionY.value = formatPositionNumber(nextSpec.positionY, nextSpec.positionMode);
+    formSyncing = false;
+    updateCssInspector();
+  }
+}
+
+function endDrag(event) {
+  if (!dragState || event.pointerId !== dragState.pointerId) return;
+
+  const object = OBJECTS[dragState.objectId];
+
+  object.element.releasePointerCapture?.(event.pointerId);
+  object.element.classList.remove("is-dragging");
+  stage.classList.remove("is-dragging");
+
+  selectionOverlayLabel.textContent = object.name;
+
+  dragState = null;
+  saveModel();
+  setForm(activeSpec());
+  updateCssInspector();
+}
+
+function cancelObjectAnimations() {
+  for (const object of Object.values(OBJECTS)) {
+    object.element.getAnimations().forEach((animation) => animation.cancel());
+    object.element.querySelectorAll?.("*").forEach((child) => {
+      child.getAnimations?.().forEach((animation) => animation.cancel());
+    });
+  }
+
+  stageContent.getAnimations().forEach((animation) => animation.cancel());
+}
+
 function flashSaved() {
   stateDirtyBadge.textContent = "Saved";
   stateDirtyBadge.classList.add("is-flashing");
@@ -673,6 +999,11 @@ function flashSaved() {
     () => stateDirtyBadge.classList.remove("is-flashing"),
     450
   );
+}
+
+function formatPositionNumber(value, mode) {
+  const digits = mode === "percent" ? 2 : 1;
+  return String(Number(Number(value).toFixed(digits)));
 }
 
 function slugify(value) {
@@ -698,31 +1029,37 @@ function escapeHtml(value) {
 }
 
 function nextFrame() {
-  return new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+  return new Promise((resolve) => {
+    requestAnimationFrame(() => requestAnimationFrame(resolve));
+  });
 }
 
 for (const [objectId, object] of Object.entries(OBJECTS)) {
   object.element.addEventListener("click", (event) => {
+    if (dragState?.moved) {
+      event.preventDefault();
+      return;
+    }
+
     event.stopPropagation();
     selectObject(objectId);
   });
 
-  if (objectId === "cards") {
-    object.element.querySelectorAll(".floating-card").forEach((card) => {
-      card.addEventListener("click", (event) => {
-        event.stopPropagation();
-        selectObject("cards");
-      });
-    });
-  }
+  object.element.addEventListener("pointerdown", (event) => {
+    beginDrag(event, objectId);
+  });
 }
 
-form.addEventListener("input", () => {
-  void updateSelectedSpec();
+window.addEventListener("pointermove", moveDrag);
+window.addEventListener("pointerup", endDrag);
+window.addEventListener("pointercancel", endDrag);
+
+form.addEventListener("input", (event) => {
+  updateSelectedSpec(event);
 });
 
-form.addEventListener("change", () => {
-  void updateSelectedSpec();
+form.addEventListener("change", (event) => {
+  updateSelectedSpec(event);
 });
 
 addStateButton.addEventListener("click", addState);
@@ -735,3 +1072,4 @@ renderStateTabs();
 renderObjectTabs();
 applyStateImmediately(activeState());
 syncSelection();
+selectionOverlayLoop();
