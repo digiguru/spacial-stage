@@ -1,463 +1,686 @@
 import "./styles.css";
 import {
-  clearMotion,
-  motionMarkup,
-  normaliseSpec,
-  playMotion
+  animateBetweenStates,
+  applyFrame,
+  cssForElement,
+  cssForParent,
+  destinationFrame,
+  layoutCompanionFrames,
+  normaliseSpec
 } from "./spacial-stage.js";
 
-const form = document.querySelector("#motionForm");
+const STORAGE_KEY = "spacial-stage-state-authoring-v1";
+
 const stage = document.querySelector("#stage");
-const playButton = document.querySelector("#playButton");
+const stageContent = document.querySelector("#stageContent");
+const form = document.querySelector("#motionForm");
+const stateTabs = document.querySelector("#stateTabs");
+const objectTabs = document.querySelector("#objectTabs");
+const addStateButton = document.querySelector("#addStateButton");
 const resetButton = document.querySelector("#resetButton");
-const motionPhrase = document.querySelector("#motionPhrase");
-const codePreview = document.querySelector("#codePreview");
-const markupPreview = document.querySelector("#markupPreview");
-const statusBadge = document.querySelector("#statusBadge");
+const replayButton = document.querySelector("#replayButton");
+const stageStateLabel = document.querySelector("#stageStateLabel");
+const selectedObjectName = document.querySelector("#selectedObjectName");
+const selectedRole = document.querySelector("#selectedRole");
+const selectedStateName = document.querySelector("#selectedStateName");
+const cssTitle = document.querySelector("#cssTitle");
+const elementCss = document.querySelector("#elementCss");
+const parentCss = document.querySelector("#parentCss");
+const stateDirtyBadge = document.querySelector("#stateDirtyBadge");
 
-const objects = {
-  header: document.querySelector("#demoHeader"),
-  panel: document.querySelector("#demoPanel"),
-  shared: document.querySelector("#sharedObject"),
-  content: document.querySelector("#contentObject"),
-  collection: document.querySelector("#collectionObject"),
-  swap: document.querySelector("#swapObject"),
-  followers: document.querySelector("#followers")
-};
-
-const allMotionElements = [
-  ...Object.values(objects),
-  ...objects.collection.querySelectorAll("article"),
-  ...objects.followers.querySelectorAll("span")
-];
-
-const PRESETS = {
-  cloudRail: {
-    label: "Cloud rail",
-    role: "panel",
-    transition: "slide",
-    layout: "push",
-    attachment: "dock",
-    coordination: "none",
-    depth: "foreground",
-    direction: "left",
-    distance: 270,
-    duration: 760,
-    stagger: 80,
-    blur: 0,
-    scale: 1,
-    opacity: 1
-  },
-  topHeader: {
-    label: "Top header",
-    role: "panel",
-    transition: "reveal",
-    layout: "overlay",
-    attachment: "dock",
-    coordination: "none",
-    depth: "foreground",
-    direction: "top",
-    distance: 140,
-    duration: 620,
-    stagger: 70,
-    blur: 0,
-    scale: 1,
-    opacity: 1
-  },
-  sharedFocus: {
-    label: "Shared focus",
+const OBJECTS = Object.freeze({
+  svg: {
+    name: "SVG object",
     role: "shared",
-    transition: "slide",
-    layout: "overlay",
-    attachment: "free",
-    coordination: "none",
-    depth: "focus",
-    direction: "right",
-    distance: 340,
-    duration: 820,
-    stagger: 80,
-    blur: 0,
-    scale: 1,
-    opacity: 1
+    element: document.querySelector("#svgObject")
   },
-  dockCard: {
-    label: "Dock card",
+  panel: {
+    name: "Panel",
+    role: "panel",
+    element: document.querySelector("#panelObject")
+  },
+  copy: {
+    name: "Title + paragraph",
     role: "content",
-    transition: "slide",
-    layout: "reflow",
-    attachment: "dock",
-    coordination: "none",
-    depth: "focus",
-    direction: "right",
-    distance: 220,
-    duration: 720,
-    stagger: 70,
-    blur: 0,
-    scale: 0.88,
-    opacity: 1
+    element: document.querySelector("#copyObject")
   },
-  staggerCards: {
-    label: "Stagger cards",
+  cards: {
+    name: "Floating cards",
     role: "collection",
-    transition: "reveal",
-    layout: "overlay",
-    attachment: "free",
-    coordination: "stagger",
-    depth: "focus",
-    direction: "bottom",
-    distance: 110,
-    duration: 560,
-    stagger: 100,
-    blur: 0,
-    scale: 1,
-    opacity: 1
-  },
-  followBadges: {
-    label: "Follow",
-    role: "shared",
-    transition: "slide",
-    layout: "overlay",
-    attachment: "float",
-    coordination: "follow",
-    depth: "foreground",
-    direction: "left",
-    distance: 260,
-    duration: 700,
-    stagger: 95,
-    blur: 0,
-    scale: 0.82,
-    opacity: 1
-  },
-  swapPanels: {
-    label: "Swap",
-    role: "content",
-    transition: "slide",
-    layout: "replace",
-    attachment: "free",
-    coordination: "swap",
-    depth: "focus",
-    direction: "left",
-    distance: 260,
-    duration: 620,
-    stagger: 110,
-    blur: 0,
-    scale: 1,
-    opacity: 1
-  },
-  collapseSection: {
-    label: "Collapse",
-    role: "content",
-    transition: "collapse",
-    layout: "reflow",
-    attachment: "free",
-    coordination: "none",
-    depth: "focus",
-    direction: "top",
-    distance: 120,
-    duration: 620,
-    stagger: 70,
-    blur: 0,
-    scale: 1,
-    opacity: 1
+    element: document.querySelector("#cardsObject")
   }
-};
+});
 
-const DEFAULT_FORM = {
-  role: "shared",
+const base = (role, overrides = {}) => normaliseSpec({
+  role,
   transition: "slide",
   layout: "overlay",
   attachment: "free",
   coordination: "none",
   depth: "focus",
   direction: "auto",
+  offsetX: 0,
+  offsetY: 0,
   distance: 180,
   duration: 700,
   stagger: 80,
   blur: 0,
   scale: 1,
   opacity: 1,
-  easing: "cubic-bezier(.2,.82,.24,1)"
-};
+  easing: "cubic-bezier(.2,.82,.24,1)",
+  customVector: { x: -1, y: 0 },
+  customCss: "",
+  ...overrides
+});
 
-let playing = false;
+const DEFAULT_STATES = [
+  {
+    id: "home",
+    name: "Home",
+    objects: {
+      svg: base("shared", {
+        transition: "slide",
+        layout: "overlay",
+        depth: "background",
+        direction: "right",
+        offsetX: 280,
+        offsetY: 145,
+        distance: 340,
+        duration: 840,
+        scale: 1.08
+      }),
+      panel: base("panel", {
+        transition: "reveal",
+        layout: "overlay",
+        attachment: "dock",
+        depth: "background",
+        direction: "left",
+        offsetX: -150,
+        opacity: 0.45,
+        duration: 600
+      }),
+      copy: base("content", {
+        transition: "reveal",
+        layout: "overlay",
+        depth: "focus",
+        direction: "left",
+        offsetX: -185,
+        offsetY: -82,
+        distance: 130,
+        duration: 620
+      }),
+      cards: base("collection", {
+        transition: "reveal",
+        layout: "overlay",
+        attachment: "float",
+        coordination: "stagger",
+        depth: "foreground",
+        direction: "bottom",
+        offsetX: 235,
+        offsetY: 135,
+        distance: 120,
+        duration: 560,
+        stagger: 90,
+        scale: 0.82,
+        opacity: 0.94
+      })
+    }
+  },
+  {
+    id: "room",
+    name: "Room",
+    objects: {
+      svg: base("shared", {
+        transition: "slide",
+        layout: "overlay",
+        depth: "focus",
+        direction: "left",
+        offsetX: 10,
+        offsetY: 38,
+        distance: 300,
+        duration: 800,
+        scale: 0.9
+      }),
+      panel: base("panel", {
+        transition: "reveal",
+        layout: "push",
+        attachment: "dock",
+        depth: "foreground",
+        direction: "left",
+        distance: 260,
+        duration: 720,
+        scale: 0.98
+      }),
+      copy: base("content", {
+        transition: "fade",
+        layout: "overlay",
+        depth: "background",
+        direction: "top",
+        offsetX: 235,
+        offsetY: -165,
+        distance: 150,
+        duration: 560,
+        opacity: 0.72,
+        scale: 0.88
+      }),
+      cards: base("collection", {
+        transition: "reveal",
+        layout: "overlay",
+        attachment: "float",
+        coordination: "stagger",
+        depth: "foreground",
+        direction: "right",
+        offsetX: 250,
+        offsetY: -110,
+        distance: 150,
+        duration: 540,
+        stagger: 85,
+        scale: 0.76
+      })
+    }
+  },
+  {
+    id: "cloud",
+    name: "Cloud",
+    objects: {
+      svg: base("shared", {
+        transition: "slide",
+        layout: "overlay",
+        depth: "background",
+        direction: "left",
+        offsetX: -315,
+        offsetY: 65,
+        distance: 350,
+        duration: 860,
+        scale: 1.18
+      }),
+      panel: base("panel", {
+        transition: "slide",
+        layout: "push",
+        attachment: "dock",
+        depth: "foreground",
+        direction: "left",
+        distance: 250,
+        duration: 720
+      }),
+      copy: base("content", {
+        transition: "reveal",
+        layout: "overlay",
+        depth: "focus",
+        direction: "top",
+        offsetX: 175,
+        offsetY: -145,
+        distance: 170,
+        duration: 620,
+        scale: 0.92
+      }),
+      cards: base("collection", {
+        transition: "reveal",
+        layout: "overlay",
+        attachment: "float",
+        coordination: "follow",
+        depth: "foreground",
+        direction: "right",
+        offsetX: 255,
+        offsetY: 135,
+        distance: 180,
+        duration: 580,
+        stagger: 100,
+        scale: 0.84
+      })
+    }
+  }
+];
 
-function selected(name) {
-  return form.elements[name]?.value || DEFAULT_FORM[name];
+let model = loadModel();
+let activeStateId = model.activeStateId || model.states[0].id;
+let previousStateId = model.previousStateId || null;
+let selectedObjectId = model.selectedObjectId || "svg";
+let isAnimating = false;
+let formSyncing = false;
+
+function loadModel() {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(STORAGE_KEY));
+    if (parsed?.states?.length) {
+      return {
+        states: parsed.states.map(normaliseState),
+        activeStateId: parsed.activeStateId,
+        previousStateId: parsed.previousStateId,
+        selectedObjectId: parsed.selectedObjectId
+      };
+    }
+  } catch {}
+
+  return {
+    states: structuredClone(DEFAULT_STATES),
+    activeStateId: "home",
+    previousStateId: null,
+    selectedObjectId: "svg"
+  };
 }
 
-function customTerm(name) {
-  const field = document.querySelector(`[data-custom-for="${name}"].custom-term`);
-  return field?.value.trim() || "custom";
+function normaliseState(state) {
+  return {
+    id: state.id,
+    name: state.name,
+    objects: Object.fromEntries(
+      Object.entries(OBJECTS).map(([objectId, object]) => [
+        objectId,
+        base(object.role, state.objects?.[objectId] || {})
+      ])
+    )
+  };
 }
 
-function displayTerm(name, value) {
-  return value === "custom" ? customTerm(name) : value;
+function saveModel() {
+  model.activeStateId = activeStateId;
+  model.previousStateId = previousStateId;
+  model.selectedObjectId = selectedObjectId;
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(model));
+  flashSaved();
 }
 
-function buildSpec() {
-  return normaliseSpec({
-    role: selected("role"),
-    transition: selected("transition"),
-    layout: selected("layout"),
-    attachment: selected("attachment"),
-    coordination: selected("coordination"),
-    depth: selected("depth"),
-    direction: selected("direction"),
+function activeState() {
+  return model.states.find((state) => state.id === activeStateId) || model.states[0];
+}
+
+function stateById(id) {
+  return model.states.find((state) => state.id === id) || null;
+}
+
+function activeSpec(objectId = selectedObjectId) {
+  return activeState().objects[objectId];
+}
+
+function renderStateTabs() {
+  stateTabs.replaceChildren();
+
+  for (const state of model.states) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "state-tab";
+    button.dataset.stateId = state.id;
+    button.classList.toggle("is-active", state.id === activeStateId);
+    button.innerHTML = `<span>${escapeHtml(state.name)}</span><small>${Object.keys(state.objects).length} objects</small>`;
+    button.addEventListener("click", () => switchState(state.id));
+    stateTabs.append(button);
+  }
+}
+
+function renderObjectTabs() {
+  objectTabs.replaceChildren();
+
+  for (const [objectId, object] of Object.entries(OBJECTS)) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "object-tab";
+    button.dataset.objectId = objectId;
+    button.classList.toggle("is-active", objectId === selectedObjectId);
+    button.innerHTML = `<span>${escapeHtml(object.name)}</span><small>${titleCase(object.role)}</small>`;
+    button.addEventListener("click", () => selectObject(objectId));
+    objectTabs.append(button);
+  }
+}
+
+function selectObject(objectId) {
+  if (!OBJECTS[objectId]) return;
+  selectedObjectId = objectId;
+  saveModel();
+  renderObjectTabs();
+  syncSelection();
+}
+
+function syncSelection() {
+  for (const [objectId, object] of Object.entries(OBJECTS)) {
+    object.element.classList.toggle("is-selected", objectId === selectedObjectId);
+  }
+
+  const state = activeState();
+  const object = OBJECTS[selectedObjectId];
+
+  selectedObjectName.textContent = object.name;
+  selectedRole.textContent = titleCase(object.role);
+  selectedStateName.textContent = state.name;
+  stageStateLabel.textContent = state.name;
+  cssTitle.textContent = object.name + " · " + state.name;
+
+  setForm(activeSpec());
+  updateCssInspector();
+}
+
+async function switchState(nextStateId, { force = false } = {}) {
+  if (isAnimating || (!force && nextStateId === activeStateId)) return;
+
+  const nextState = stateById(nextStateId);
+  if (!nextState) return;
+
+  const fromState = activeState();
+  previousStateId = activeStateId;
+  activeStateId = nextStateId;
+
+  renderStateTabs();
+  stage.dataset.activeState = nextStateId;
+  stage.dataset.transitioning = "true";
+  isAnimating = true;
+
+  try {
+    await animateAllObjects(fromState, nextState);
+  } finally {
+    delete stage.dataset.transitioning;
+    isAnimating = false;
+  }
+
+  for (const object of Object.values(OBJECTS)) {
+    object.element.dataset.stageState = nextStateId;
+  }
+
+  saveModel();
+  syncSelection();
+}
+
+async function animateAllObjects(fromState, toState) {
+  const jobs = [];
+  const layoutCandidates = [];
+
+  Object.entries(OBJECTS).forEach(([objectId, object], index) => {
+    const fromSpec = fromState.objects[objectId];
+    const toSpec = toState.objects[objectId];
+    const delay = coordinationDelay(toSpec, index);
+
+    jobs.push(
+      animateBetweenStates(object.element, stage, fromSpec, toSpec, { delay })
+    );
+
+    if (toSpec.layout !== "overlay") {
+      layoutCandidates.push({ objectId, spec: toSpec });
+    }
+
+    if (objectId === "cards" && toSpec.coordination === "stagger") {
+      animateCardChildren(toSpec);
+    }
+  });
+
+  if (layoutCandidates.length) {
+    const chosen =
+      layoutCandidates.find((item) => item.spec.role === "panel")
+      || layoutCandidates[0];
+
+    jobs.push(animateStageLayout(chosen.spec));
+  }
+
+  await Promise.all(jobs);
+}
+
+function coordinationDelay(spec, index) {
+  if (spec.coordination === "follow") return index * Math.min(spec.stagger, 140);
+  if (spec.coordination === "swap") return index % 2 === 0 ? 0 : Math.round(spec.stagger * 0.55);
+  return 0;
+}
+
+function animateCardChildren(spec) {
+  [...OBJECTS.cards.element.querySelectorAll(".floating-card")].forEach((card, index) => {
+    card.animate(
+      [
+        { transform: "translateY(24px)", opacity: 0 },
+        { transform: "translateY(0)", opacity: 1 }
+      ],
+      {
+        duration: Math.max(220, spec.duration * 0.72),
+        delay: index * spec.stagger,
+        easing: spec.easing,
+        fill: "both"
+      }
+    );
+  });
+}
+
+async function animateStageLayout(spec) {
+  const frames = layoutCompanionFrames(spec);
+  if (!frames || !stageContent.animate) return null;
+
+  const animation = stageContent.animate(frames, {
+    duration: spec.duration,
+    easing: spec.easing
+  });
+
+  await animation.finished.catch(() => {});
+  return animation;
+}
+
+function applyStateImmediately(state) {
+  for (const [objectId, object] of Object.entries(OBJECTS)) {
+    const spec = state.objects[objectId];
+    applyFrame(object.element, destinationFrame(object.element, stage, spec));
+    object.element.dataset.stageState = state.id;
+  }
+
+  stage.dataset.activeState = state.id;
+  stageStateLabel.textContent = state.name;
+}
+
+async function replayTransition() {
+  if (isAnimating) return;
+
+  const targetState = activeState();
+  let fromState = stateById(previousStateId);
+
+  if (!fromState || fromState.id === targetState.id) {
+    const currentIndex = model.states.findIndex((state) => state.id === targetState.id);
+    fromState = model.states[(currentIndex - 1 + model.states.length) % model.states.length];
+  }
+
+  if (!fromState || fromState.id === targetState.id) return;
+
+  applyStateImmediately(fromState);
+  await nextFrame();
+
+  isAnimating = true;
+  stage.dataset.transitioning = "true";
+
+  try {
+    await animateAllObjects(fromState, targetState);
+  } finally {
+    delete stage.dataset.transitioning;
+    isAnimating = false;
+  }
+
+  applyStateImmediately(targetState);
+  syncSelection();
+}
+
+function setForm(specInput) {
+  const spec = normaliseSpec(specInput);
+  formSyncing = true;
+
+  for (const key of ["transition", "layout", "attachment", "coordination", "depth", "direction"]) {
+    const radio =
+      form.querySelector(`input[name="${key}"][value="${spec[key]}"]`)
+      || form.querySelector(`input[name="${key}"][value="custom"]`);
+
+    if (radio) radio.checked = true;
+  }
+
+  form.elements.offsetX.value = spec.offsetX;
+  form.elements.offsetY.value = spec.offsetY;
+  form.elements.customX.value = spec.customVector.x;
+  form.elements.customY.value = spec.customVector.y;
+  form.elements.distance.value = spec.distance;
+  form.elements.duration.value = spec.duration;
+  form.elements.stagger.value = spec.stagger;
+  form.elements.blur.value = spec.blur;
+  form.elements.scale.value = Math.round(spec.scale * 100);
+  form.elements.opacity.value = Math.round(spec.opacity * 100);
+  form.elements.easing.value = spec.easing;
+  form.elements.customCss.value = spec.customCss;
+
+  syncOutputs();
+  formSyncing = false;
+}
+
+function readForm() {
+  const object = OBJECTS[selectedObjectId];
+
+  return base(object.role, {
+    transition: form.elements.transition.value,
+    layout: form.elements.layout.value,
+    attachment: form.elements.attachment.value,
+    coordination: form.elements.coordination.value,
+    depth: form.elements.depth.value,
+    direction: form.elements.direction.value,
+    offsetX: Number(form.elements.offsetX.value),
+    offsetY: Number(form.elements.offsetY.value),
+    customVector: {
+      x: Number(form.elements.customX.value),
+      y: Number(form.elements.customY.value)
+    },
     distance: Number(form.elements.distance.value),
     duration: Number(form.elements.duration.value),
     stagger: Number(form.elements.stagger.value),
     blur: Number(form.elements.blur.value),
     scale: Number(form.elements.scale.value) / 100,
     opacity: Number(form.elements.opacity.value) / 100,
-    easing: form.elements.easing.value.trim() || DEFAULT_FORM.easing,
-    customVector: {
-      x: Number(form.elements.customX.value),
-      y: Number(form.elements.customY.value)
-    }
+    easing: form.elements.easing.value.trim(),
+    customCss: form.elements.customCss.value
   });
 }
 
-function currentPhrase(spec) {
-  return [
-    displayTerm("role", spec.role),
-    displayTerm("transition", spec.transition),
-    displayTerm("layout", spec.layout),
-    displayTerm("attachment", spec.attachment),
-    displayTerm("coordination", spec.coordination),
-    displayTerm("depth", spec.depth),
-    displayTerm("direction", spec.direction)
-  ].map(titleCase).join(" · ");
-}
+async function updateSelectedSpec() {
+  if (formSyncing) return;
 
-function updatePreview() {
-  const spec = buildSpec();
-  motionPhrase.textContent = currentPhrase(spec);
+  const state = activeState();
+  const oldSpec = state.objects[selectedObjectId];
+  const newSpec = readForm();
+  state.objects[selectedObjectId] = newSpec;
 
-  codePreview.textContent = `playMotion({
-  targets,
-  container: stage,
-  spec: ${JSON.stringify({
-    role: spec.role,
-    transition: spec.transition,
-    layout: spec.layout,
-    attachment: spec.attachment,
-    coordination: spec.coordination,
-    depth: spec.depth,
-    direction: spec.direction
-  }, null, 2)}
-});`;
-
-  markupPreview.textContent = `<div
-  ${motionMarkup(spec).replaceAll("\n", "\n  ")}
->
-  …
-</div>`;
-
-  syncCustomFields();
   syncOutputs();
-  prepareScene(spec, { keepAnimations: true });
+  saveModel();
+  updateCssInspector();
+
+  const object = OBJECTS[selectedObjectId];
+
+  await animateBetweenStates(object.element, stage, oldSpec, {
+    ...newSpec,
+    duration: Math.min(newSpec.duration, 300)
+  });
+
+  if (selectedObjectId === "cards" && newSpec.coordination === "stagger") {
+    animateCardChildren(newSpec);
+  }
 }
 
-function syncCustomFields() {
-  ["role", "transition", "layout", "attachment", "coordination", "depth", "direction"].forEach((name) => {
-    const custom = document.querySelector(`[data-custom-for="${name}"]`);
-    if (!custom) return;
-    custom.hidden = selected(name) !== "custom";
+function updateCssInspector() {
+  const object = OBJECTS[selectedObjectId];
+  const state = activeState();
+  const spec = state.objects[selectedObjectId];
+  const frame = destinationFrame(object.element, stage, spec);
+  const selector = `[data-object="${selectedObjectId}"]`;
+
+  elementCss.textContent = cssForElement({
+    selector,
+    stateName: state.id,
+    spec,
+    frame
+  });
+
+  parentCss.textContent = cssForParent({
+    stageSelector: "[data-stage]",
+    objectSelector: selector,
+    spec
   });
 }
 
 function syncOutputs() {
-  document.querySelector('[data-output="distance"]').value =
-    form.elements.distance.value + "px";
-  document.querySelector('[data-output="duration"]').value =
-    form.elements.duration.value + "ms";
-  document.querySelector('[data-output="stagger"]').value =
-    form.elements.stagger.value + "ms";
-  document.querySelector('[data-output="blur"]').value =
-    form.elements.blur.value + "px";
-  document.querySelector('[data-output="scale"]').value =
-    (Number(form.elements.scale.value) / 100).toFixed(2);
-  document.querySelector('[data-output="opacity"]').value =
-    (Number(form.elements.opacity.value) / 100).toFixed(2);
-}
+  const formats = {
+    distance: (value) => value + "px",
+    duration: (value) => value + "ms",
+    stagger: (value) => value + "ms",
+    blur: (value) => value + "px",
+    scale: (value) => (Number(value) / 100).toFixed(2),
+    opacity: (value) => (Number(value) / 100).toFixed(2)
+  };
 
-function resetMotionState() {
-  clearMotion(allMotionElements);
-  allMotionElements.forEach((element) => {
-    element.classList.remove("is-demo-active");
-  });
-  objects.swap.classList.remove("is-demo-active");
-}
-
-function primaryFor(spec) {
-  if (spec.role === "panel") {
-    return spec.direction === "top" || spec.direction === "bottom"
-      ? objects.header
-      : objects.panel;
-  }
-
-  if (spec.role === "collection") return objects.collection;
-  if (spec.role === "content" || spec.role === "custom") return objects.content;
-  return objects.shared;
-}
-
-function prepareScene(spec, { keepAnimations = false } = {}) {
-  if (!keepAnimations) resetMotionState();
-
-  const primary = primaryFor(spec);
-
-  if (!keepAnimations) primary.classList.add("is-demo-active");
-
-  if (spec.role === "panel") {
-    objects.shared.classList.add("is-demo-active");
-    if (!keepAnimations) {
-      objects.shared.style.opacity = "0.5";
-      objects.shared.style.filter = "blur(7px)";
-      objects.shared.style.transform = "scale(.78)";
-    }
-  }
-
-  if (spec.coordination === "swap" && !keepAnimations) {
-    objects.swap.classList.add("is-demo-active");
-  }
-
-  if (spec.coordination === "follow") {
-    objects.followers.classList.add("is-demo-active");
-  }
-
-  return primary;
-}
-
-function playTargets(spec, primary) {
-  if (spec.coordination === "stagger") {
-    if (spec.role === "collection") {
-      return [...objects.collection.querySelectorAll("article")];
-    }
-    return [primary, ...objects.followers.querySelectorAll("span")];
-  }
-
-  return primary;
-}
-
-function layoutTargetsFor(spec, primary) {
-  if (spec.layout === "overlay") return [];
-
-  if (spec.role === "panel") {
-    return [objects.shared];
-  }
-
-  if (primary !== objects.content) {
-    return [objects.content];
-  }
-
-  return [objects.shared];
-}
-
-async function play() {
-  if (playing) return;
-  playing = true;
-  setStatus("Playing", true);
-
-  const spec = buildSpec();
-  resetMotionState();
-
-  const primary = prepareScene(spec);
-  const targets = playTargets(spec, primary);
-
-  (Array.isArray(targets) ? targets : [targets]).forEach((element) => {
-    element.classList.add("is-demo-active");
-  });
-
-  if (spec.coordination === "swap") {
-    objects.swap.classList.add("is-demo-active");
-  }
-
-  if (spec.coordination === "follow") {
-    objects.followers.classList.add("is-demo-active");
-  }
-
-  const layoutTargets = layoutTargetsFor(spec, primary);
-  layoutTargets.forEach((element) => element.classList.add("is-demo-active"));
-
-  try {
-    await playMotion({
-      targets,
-      swapTarget: spec.coordination === "swap" ? objects.swap : null,
-      followTargets: spec.coordination === "follow"
-        ? [...objects.followers.querySelectorAll("span")]
-        : [],
-      layoutTargets,
-      container: stage,
-      spec
-    });
-    setStatus("Settled", false);
-  } finally {
-    playing = false;
+  for (const [name, format] of Object.entries(formats)) {
+    const output = document.querySelector(`[data-output="${name}"]`);
+    if (output) output.value = format(form.elements[name].value);
   }
 }
 
-function setStatus(text, active) {
-  statusBadge.textContent = text;
-  statusBadge.classList.toggle("is-playing", active);
+function addState() {
+  const source = activeState();
+  const suggested = "State " + (model.states.length + 1);
+  const rawName = window.prompt("Name this state", suggested);
+  const name = rawName?.replace(/\s+/g, " ").trim();
+
+  if (!name) return;
+
+  const id = uniqueStateId(slugify(name));
+  const state = structuredClone(source);
+  state.id = id;
+  state.name = name;
+
+  model.states.push(state);
+  previousStateId = activeStateId;
+  activeStateId = id;
+
+  applyStateImmediately(state);
+  saveModel();
+  renderStateTabs();
+  syncSelection();
 }
 
-function setRadio(name, value) {
-  const input = form.querySelector(`input[name="${name}"][value="${value}"]`);
-  if (input) input.checked = true;
+function uniqueStateId(baseId) {
+  const root = baseId || "state";
+  let candidate = root;
+  let index = 2;
+
+  while (model.states.some((state) => state.id === candidate)) {
+    candidate = root + "-" + index;
+    index += 1;
+  }
+
+  return candidate;
 }
 
-function setPreset(name) {
-  const preset = PRESETS[name];
-  if (!preset) return;
+function resetDemo() {
+  if (!window.confirm("Reset the playground back to the example Home, Room and Cloud states?")) return;
 
-  resetMotionState();
+  model = {
+    states: structuredClone(DEFAULT_STATES),
+    activeStateId: "home",
+    previousStateId: null,
+    selectedObjectId: "svg"
+  };
 
-  ["role", "transition", "layout", "attachment", "coordination", "depth", "direction"].forEach((key) => {
-    setRadio(key, preset[key]);
-  });
+  activeStateId = "home";
+  previousStateId = null;
+  selectedObjectId = "svg";
 
-  form.elements.distance.value = preset.distance;
-  form.elements.duration.value = preset.duration;
-  form.elements.stagger.value = preset.stagger;
-  form.elements.blur.value = preset.blur;
-  form.elements.scale.value = Math.round(preset.scale * 100);
-  form.elements.opacity.value = Math.round(preset.opacity * 100);
-
-  document.querySelectorAll("[data-preset]").forEach((button) => {
-    button.classList.toggle("is-active", button.dataset.preset === name);
-  });
-
-  updatePreview();
-  play();
+  localStorage.removeItem(STORAGE_KEY);
+  renderStateTabs();
+  renderObjectTabs();
+  applyStateImmediately(activeState());
+  syncSelection();
+  saveModel();
 }
 
-function resetForm() {
-  resetMotionState();
+function flashSaved() {
+  stateDirtyBadge.textContent = "Saved";
+  stateDirtyBadge.classList.add("is-flashing");
 
-  ["role", "transition", "layout", "attachment", "coordination", "depth", "direction"].forEach((key) => {
-    setRadio(key, DEFAULT_FORM[key]);
-  });
+  clearTimeout(flashSaved.timer);
+  flashSaved.timer = setTimeout(
+    () => stateDirtyBadge.classList.remove("is-flashing"),
+    450
+  );
+}
 
-  form.elements.distance.value = DEFAULT_FORM.distance;
-  form.elements.duration.value = DEFAULT_FORM.duration;
-  form.elements.stagger.value = DEFAULT_FORM.stagger;
-  form.elements.blur.value = DEFAULT_FORM.blur;
-  form.elements.scale.value = DEFAULT_FORM.scale * 100;
-  form.elements.opacity.value = DEFAULT_FORM.opacity * 100;
-  form.elements.easing.value = DEFAULT_FORM.easing;
-  form.elements.customX.value = -1;
-  form.elements.customY.value = 0;
-
-  form.querySelectorAll(".custom-term").forEach((input) => {
-    input.value = "";
-  });
-
-  document.querySelectorAll("[data-preset]").forEach((button) => {
-    button.classList.remove("is-active");
-  });
-
-  setStatus("Ready", false);
-  updatePreview();
+function slugify(value) {
+  return String(value)
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
 }
 
 function titleCase(value) {
@@ -466,20 +689,49 @@ function titleCase(value) {
     .replace(/\b\w/g, (letter) => letter.toUpperCase());
 }
 
-form.addEventListener("input", () => {
-  document.querySelectorAll("[data-preset]").forEach((button) => {
-    button.classList.remove("is-active");
+function escapeHtml(value) {
+  return String(value)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;");
+}
+
+function nextFrame() {
+  return new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+}
+
+for (const [objectId, object] of Object.entries(OBJECTS)) {
+  object.element.addEventListener("click", (event) => {
+    event.stopPropagation();
+    selectObject(objectId);
   });
-  updatePreview();
+
+  if (objectId === "cards") {
+    object.element.querySelectorAll(".floating-card").forEach((card) => {
+      card.addEventListener("click", (event) => {
+        event.stopPropagation();
+        selectObject("cards");
+      });
+    });
+  }
+}
+
+form.addEventListener("input", () => {
+  void updateSelectedSpec();
 });
 
-form.addEventListener("change", updatePreview);
-playButton.addEventListener("click", play);
-resetButton.addEventListener("click", resetForm);
-
-document.querySelectorAll("[data-preset]").forEach((button) => {
-  button.addEventListener("click", () => setPreset(button.dataset.preset));
+form.addEventListener("change", () => {
+  void updateSelectedSpec();
 });
 
-updatePreview();
-play();
+addStateButton.addEventListener("click", addState);
+resetButton.addEventListener("click", resetDemo);
+replayButton.addEventListener("click", () => {
+  void replayTransition();
+});
+
+renderStateTabs();
+renderObjectTabs();
+applyStateImmediately(activeState());
+syncSelection();
