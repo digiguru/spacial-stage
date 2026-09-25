@@ -705,6 +705,7 @@ function setForm(specInput) {
   syncPositionUnits(spec.positionMode);
   syncSizeUnits(spec.sizeMode);
   syncSizeInputs(spec.sizeMode);
+  refreshParameterHelp();
   formSyncing = false;
 }
 
@@ -798,6 +799,7 @@ function updateSelectedSpec(event) {
   syncPositionUnits(newSpec.positionMode);
   syncSizeUnits(newSpec.sizeMode);
   syncSizeInputs(newSpec.sizeMode);
+  refreshParameterHelp();
   saveModel();
   updateCssInspector();
   updateSelectionOverlay();
@@ -902,6 +904,36 @@ function syncOutputs() {
 
     if (output) {
       output.value = format(form.elements[name].value);
+    }
+  }
+}
+
+function refreshParameterHelp() {
+  for (const helpArea of form.querySelectorAll("[data-help-for]")) {
+    const name = helpArea.dataset.helpFor;
+    const selected = [
+      ...form.querySelectorAll(`input[name="${name}"]:checked`)
+    ];
+
+    helpArea.replaceChildren();
+
+    if (!selected.length) {
+      if (name === "animations") {
+        const paragraph = document.createElement("p");
+        paragraph.textContent =
+          "No animations selected. The object snaps directly to its destination state.";
+        helpArea.append(paragraph);
+      }
+      continue;
+    }
+
+    for (const input of selected) {
+      const sentence = input.dataset.help?.trim();
+      if (!sentence) continue;
+
+      const paragraph = document.createElement("p");
+      paragraph.textContent = sentence;
+      helpArea.append(paragraph);
     }
   }
 }

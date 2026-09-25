@@ -181,72 +181,78 @@
                 <legend>Animations</legend>
                 <p class="control-help">Choose zero, one or several effects. Zero means the object snaps straight to its destination state.</p>
                 <div class="segmented option-cards animation-options">
-                  <label><input type="checkbox" name="animations" value="slide" /><span><strong>Slide</strong><small>Interpolate position and size from the previous state into this destination.</small></span></label>
-                  <label><input type="checkbox" name="animations" value="fade" /><span><strong>Fade</strong><small>Arrive from transparent to the destination opacity.</small></span></label>
-                  <label><input type="checkbox" name="animations" value="reveal" /><span><strong>Reveal</strong><small>Open a directional clip or mask until the whole object is visible.</small></span></label>
-                  <label><input type="checkbox" name="animations" value="focus" /><span><strong>Focus</strong><small>Resolve from soft, blurred and slightly reduced into the destination appearance.</small></span></label>
-                  <label><input type="checkbox" name="animations" value="collapse" /><span><strong>Collapse</strong><small>Expand from a compressed edge into the full destination geometry.</small></span></label>
+                  <label><input type="checkbox" name="animations" value="slide" data-help="Interpolate position and size from the previous state into this destination." /><span><strong>Slide</strong></span></label>
+                  <label><input type="checkbox" name="animations" value="fade" data-help="Arrive from transparent to the destination opacity." /><span><strong>Fade</strong></span></label>
+                  <label><input type="checkbox" name="animations" value="reveal" data-help="Open a directional clip or mask until the whole object is visible." /><span><strong>Reveal</strong></span></label>
+                  <label><input type="checkbox" name="animations" value="focus" data-help="Resolve from soft, blurred and slightly reduced into the destination appearance." /><span><strong>Focus</strong></span></label>
+                  <label><input type="checkbox" name="animations" value="collapse" data-help="Expand from a compressed edge into the full destination geometry." /><span><strong>Collapse</strong></span></label>
                 </div>
+                <div id="animationsHelp" class="selected-parameter-help" data-help-for="animations" aria-live="polite"></div>
               </fieldset>
 
               <fieldset class="control-group">
                 <legend>Layout effect</legend>
                 <p class="control-help">Controls what the object's arrival does to neighbouring stage content. This is separate from the object's own animations.</p>
                 <div class="segmented option-cards">
-                  <label><input type="radio" name="layout" value="overlay" /><span><strong>Overlay</strong><small>Move independently above existing content; neighbours do not react.</small></span></label>
-                  <label><input type="radio" name="layout" value="push" /><span><strong>Push</strong><small>Displace surrounding stage content away from the arriving object.</small></span></label>
-                  <label><input type="radio" name="layout" value="replace" /><span><strong>Replace</strong><small>Temporarily fade/soften surrounding content while this destination takes over.</small></span></label>
-                  <label><input type="radio" name="layout" value="reflow" /><span><strong>Reflow</strong><small>Compress and shift surrounding content to suggest a layout reorganisation.</small></span></label>
-                  <label><input type="radio" name="layout" value="custom" /><span><strong>Custom</strong><small>Reserve the semantic slot while supplying your own parent/container CSS.</small></span></label>
+                  <label><input type="radio" name="layout" value="overlay" data-help="Move independently above existing content; neighbours do not react." /><span><strong>Overlay</strong></span></label>
+                  <label><input type="radio" name="layout" value="push" data-help="Displace surrounding stage content away from the arriving object." /><span><strong>Push</strong></span></label>
+                  <label><input type="radio" name="layout" value="replace" data-help="Temporarily fade/soften surrounding content while this destination takes over." /><span><strong>Replace</strong></span></label>
+                  <label><input type="radio" name="layout" value="reflow" data-help="Compress and shift surrounding content to suggest a layout reorganisation." /><span><strong>Reflow</strong></span></label>
+                  <label><input type="radio" name="layout" value="custom" data-help="Reserve the semantic slot while supplying your own parent/container CSS." /><span><strong>Custom</strong></span></label>
                 </div>
+                <div id="layoutHelp" class="selected-parameter-help" data-help-for="layout" aria-live="polite"></div>
               </fieldset>
 
               <fieldset class="control-group">
                 <legend>Attachment</legend>
                 <p class="control-help">Defines how the destination position relates to the stage rather than how it animates.</p>
                 <div class="segmented option-cards">
-                  <label><input type="radio" name="attachment" value="free" /><span><strong>Free</strong><small>Use the authored anchors and offsets with no extra attachment behaviour.</small></span></label>
-                  <label><input type="radio" name="attachment" value="float" /><span><strong>Float</strong><small>Lift the destination slightly away from the stage plane for a loose floating feel.</small></span></label>
-                  <label><input type="radio" name="attachment" value="dock" /><span><strong>Dock</strong><small>Snap one axis to the selected stage edge while retaining the authored offset.</small></span></label>
-                  <label><input type="radio" name="attachment" value="pin" /><span><strong>Pin</strong><small>Keep the authored anchored destination stable without float or dock adjustment.</small></span></label>
-                  <label><input type="radio" name="attachment" value="custom" /><span><strong>Custom</strong><small>Keep the position model but apply your own attachment CSS or application logic.</small></span></label>
+                  <label><input type="radio" name="attachment" value="free" data-help="Use the authored anchors and offsets with no extra attachment behaviour." /><span><strong>Free</strong></span></label>
+                  <label><input type="radio" name="attachment" value="float" data-help="Lift the destination slightly away from the stage plane for a loose floating feel." /><span><strong>Float</strong></span></label>
+                  <label><input type="radio" name="attachment" value="dock" data-help="Snap one axis to the selected stage edge while retaining the authored offset." /><span><strong>Dock</strong></span></label>
+                  <label><input type="radio" name="attachment" value="pin" data-help="Keep the authored anchored destination stable without float or dock adjustment." /><span><strong>Pin</strong></span></label>
+                  <label><input type="radio" name="attachment" value="custom" data-help="Keep the position model but apply your own attachment CSS or application logic." /><span><strong>Custom</strong></span></label>
                 </div>
+                <div id="attachmentHelp" class="selected-parameter-help" data-help-for="attachment" aria-live="polite"></div>
               </fieldset>
 
               <fieldset class="control-group">
                 <legend>Coordination</legend>
                 <p class="control-help">Controls timing relationships between this object, collections and other moving stage objects.</p>
                 <div class="segmented option-cards">
-                  <label><input type="radio" name="coordination" value="none" /><span><strong>None</strong><small>Animate independently with no additional timing relationship.</small></span></label>
-                  <label><input type="radio" name="coordination" value="swap" /><span><strong>Swap</strong><small>Offset paired participants so one hands the stage to the other.</small></span></label>
-                  <label><input type="radio" name="coordination" value="stagger" /><span><strong>Stagger</strong><small>Delay collection children by the Stagger gap to create a sequence.</small></span></label>
-                  <label><input type="radio" name="coordination" value="follow" /><span><strong>Follow</strong><small>Delay this object's hand-off relative to earlier stage objects.</small></span></label>
-                  <label><input type="radio" name="coordination" value="custom" /><span><strong>Custom</strong><small>Reserve coordination semantics for application-specific orchestration.</small></span></label>
+                  <label><input type="radio" name="coordination" value="none" data-help="Animate independently with no additional timing relationship." /><span><strong>None</strong></span></label>
+                  <label><input type="radio" name="coordination" value="swap" data-help="Offset paired participants so one hands the stage to the other." /><span><strong>Swap</strong></span></label>
+                  <label><input type="radio" name="coordination" value="stagger" data-help="Delay collection children by the Stagger gap to create a sequence." /><span><strong>Stagger</strong></span></label>
+                  <label><input type="radio" name="coordination" value="follow" data-help="Delay this object's hand-off relative to earlier stage objects." /><span><strong>Follow</strong></span></label>
+                  <label><input type="radio" name="coordination" value="custom" data-help="Reserve coordination semantics for application-specific orchestration." /><span><strong>Custom</strong></span></label>
                 </div>
+                <div id="coordinationHelp" class="selected-parameter-help" data-help-for="coordination" aria-live="polite"></div>
               </fieldset>
 
               <fieldset class="control-group">
                 <legend>Depth</legend>
                 <p class="control-help">Where the object visually rests after animation. Depth is a destination property; Focus is now an animation effect above.</p>
                 <div class="segmented option-cards">
-                  <label><input type="radio" name="depth" value="background" /><span><strong>Background</strong><small>Recessed destination: low z-index, blurred, lower opacity and visually softened.</small></span></label>
-                  <label><input type="radio" name="depth" value="base" /><span><strong>Base</strong><small>Normal destination plane: sharp, full-opacity, normal scale and middle stacking.</small></span></label>
-                  <label><input type="radio" name="depth" value="foreground" /><span><strong>Foreground</strong><small>Raised destination: higher z-index and a small visual scale lift above Base.</small></span></label>
-                  <label><input type="radio" name="depth" value="custom" /><span><strong>Custom</strong><small>Start from the Base layer and use Blur, Scale, Opacity or Custom CSS to define your own depth.</small></span></label>
+                  <label><input type="radio" name="depth" value="background" data-help="Recessed destination: low z-index, blurred, lower opacity and visually softened." /><span><strong>Background</strong></span></label>
+                  <label><input type="radio" name="depth" value="base" data-help="Normal destination plane: sharp, full-opacity, normal scale and middle stacking." /><span><strong>Base</strong></span></label>
+                  <label><input type="radio" name="depth" value="foreground" data-help="Raised destination: higher z-index and a small visual scale lift above Base." /><span><strong>Foreground</strong></span></label>
+                  <label><input type="radio" name="depth" value="custom" data-help="Start from the Base layer and use Blur, Scale, Opacity or Custom CSS to define your own depth." /><span><strong>Custom</strong></span></label>
                 </div>
+                <div id="depthHelp" class="selected-parameter-help" data-help-for="depth" aria-live="polite"></div>
               </fieldset>
 
               <fieldset class="control-group">
                 <legend>Direction / edge</legend>
                 <p class="control-help">Provides an edge/vector for Reveal, Collapse, Dock and layout effects. Slide itself travels between actual state positions.</p>
                 <div class="segmented option-cards">
-                  <label><input type="radio" name="direction" value="auto" /><span><strong>Auto</strong><small>Choose a sensible direction from the object's role: panels left, shared visuals right, content/collections bottom.</small></span></label>
-                  <label><input type="radio" name="direction" value="top" /><span><strong>Top</strong><small>Use the top edge or upward direction.</small></span></label>
-                  <label><input type="radio" name="direction" value="right" /><span><strong>Right</strong><small>Use the right edge or rightward direction.</small></span></label>
-                  <label><input type="radio" name="direction" value="bottom" /><span><strong>Bottom</strong><small>Use the bottom edge or downward direction.</small></span></label>
-                  <label><input type="radio" name="direction" value="left" /><span><strong>Left</strong><small>Use the left edge or leftward direction.</small></span></label>
-                  <label><input type="radio" name="direction" value="custom" /><span><strong>Custom</strong><small>Use the custom X/Y direction vector from Numeric overrides.</small></span></label>
+                  <label><input type="radio" name="direction" value="auto" data-help="Choose a sensible direction from the object's role: panels left, shared visuals right, content/collections bottom." /><span><strong>Auto</strong></span></label>
+                  <label><input type="radio" name="direction" value="top" data-help="Use the top edge or upward direction." /><span><strong>Top</strong></span></label>
+                  <label><input type="radio" name="direction" value="right" data-help="Use the right edge or rightward direction." /><span><strong>Right</strong></span></label>
+                  <label><input type="radio" name="direction" value="bottom" data-help="Use the bottom edge or downward direction." /><span><strong>Bottom</strong></span></label>
+                  <label><input type="radio" name="direction" value="left" data-help="Use the left edge or leftward direction." /><span><strong>Left</strong></span></label>
+                  <label><input type="radio" name="direction" value="custom" data-help="Use the custom X/Y direction vector from Numeric overrides." /><span><strong>Custom</strong></span></label>
                 </div>
+                <div id="directionHelp" class="selected-parameter-help" data-help-for="direction" aria-live="polite"></div>
               </fieldset>
 
               <fieldset class="control-group position-control-group">
@@ -256,27 +262,30 @@
                 <div class="position-control-section">
                   <span class="position-control-label">Horizontal anchor</span>
                   <div class="segmented option-cards compact-options">
-                    <label><input type="radio" name="horizontalAnchor" value="left" /><span><strong>Left</strong><small>Measure X offset from the stage's left edge.</small></span></label>
-                    <label><input type="radio" name="horizontalAnchor" value="center" /><span><strong>Centre</strong><small>Measure X offset from horizontal centre.</small></span></label>
-                    <label><input type="radio" name="horizontalAnchor" value="right" /><span><strong>Right</strong><small>Measure X offset from the stage's right edge.</small></span></label>
+                    <label><input type="radio" name="horizontalAnchor" value="left" data-help="Measure X offset from the stage's left edge." /><span><strong>Left</strong></span></label>
+                    <label><input type="radio" name="horizontalAnchor" value="center" data-help="Measure X offset from horizontal centre." /><span><strong>Centre</strong></span></label>
+                    <label><input type="radio" name="horizontalAnchor" value="right" data-help="Measure X offset from the stage's right edge." /><span><strong>Right</strong></span></label>
                   </div>
+                <div id="horizontalAnchorHelp" class="selected-parameter-help" data-help-for="horizontalAnchor" aria-live="polite"></div>
                 </div>
 
                 <div class="position-control-section">
                   <span class="position-control-label">Vertical anchor</span>
                   <div class="segmented option-cards compact-options">
-                    <label><input type="radio" name="verticalAnchor" value="top" /><span><strong>Top</strong><small>Measure Y offset from the stage's top edge.</small></span></label>
-                    <label><input type="radio" name="verticalAnchor" value="center" /><span><strong>Centre</strong><small>Measure Y offset from vertical centre.</small></span></label>
-                    <label><input type="radio" name="verticalAnchor" value="bottom" /><span><strong>Bottom</strong><small>Measure Y offset from the stage's bottom edge.</small></span></label>
+                    <label><input type="radio" name="verticalAnchor" value="top" data-help="Measure Y offset from the stage's top edge." /><span><strong>Top</strong></span></label>
+                    <label><input type="radio" name="verticalAnchor" value="center" data-help="Measure Y offset from vertical centre." /><span><strong>Centre</strong></span></label>
+                    <label><input type="radio" name="verticalAnchor" value="bottom" data-help="Measure Y offset from the stage's bottom edge." /><span><strong>Bottom</strong></span></label>
                   </div>
+                <div id="verticalAnchorHelp" class="selected-parameter-help" data-help-for="verticalAnchor" aria-live="polite"></div>
                 </div>
 
                 <div class="position-control-section">
                   <span class="position-control-label">Offset units</span>
                   <div class="segmented option-cards compact-options">
-                    <label><input type="radio" name="positionMode" value="absolute" /><span><strong>Pixels</strong><small>Store X/Y as fixed pixel offsets.</small></span></label>
-                    <label><input type="radio" name="positionMode" value="percent" /><span><strong>Percent</strong><small>Store X/Y as percentages of stage width/height.</small></span></label>
+                    <label><input type="radio" name="positionMode" value="absolute" data-help="Store X/Y as fixed pixel offsets." /><span><strong>Pixels</strong></span></label>
+                    <label><input type="radio" name="positionMode" value="percent" data-help="Store X/Y as percentages of stage width/height." /><span><strong>Percent</strong></span></label>
                   </div>
+                <div id="positionModeHelp" class="selected-parameter-help" data-help-for="positionMode" aria-live="polite"></div>
                 </div>
 
                 <div class="position-values">
@@ -292,10 +301,11 @@
                 <div class="position-control-section">
                   <span class="position-control-label">Size units</span>
                   <div class="segmented option-cards compact-options">
-                    <label><input type="radio" name="sizeMode" value="natural" /><span><strong>Natural</strong><small>Use the dimensions authored by the object's normal CSS.</small></span></label>
-                    <label><input type="radio" name="sizeMode" value="absolute" /><span><strong>Pixels</strong><small>Store an explicit width and height in pixels.</small></span></label>
-                    <label><input type="radio" name="sizeMode" value="percent" /><span><strong>Percent</strong><small>Store width/height relative to stage width/height.</small></span></label>
+                    <label><input type="radio" name="sizeMode" value="natural" data-help="Use the dimensions authored by the object's normal CSS." /><span><strong>Natural</strong></span></label>
+                    <label><input type="radio" name="sizeMode" value="absolute" data-help="Store an explicit width and height in pixels." /><span><strong>Pixels</strong></span></label>
+                    <label><input type="radio" name="sizeMode" value="percent" data-help="Store width/height relative to stage width/height." /><span><strong>Percent</strong></span></label>
                   </div>
+                <div id="sizeModeHelp" class="selected-parameter-help" data-help-for="sizeMode" aria-live="polite"></div>
                 </div>
                 <div class="position-values size-values">
                   <label><span>Width</span><input type="number" name="sizeWidth" min="1" step="1" /><small id="sizeWidthUnit">px</small><em>Final layout width before visual Scale.</em></label>

@@ -583,6 +583,24 @@ summary:focus-visible {
 .compact-options { grid-template-columns: repeat(3,minmax(0,1fr)); }
 .animation-options { grid-template-columns: repeat(2,minmax(0,1fr)); }
 
+.selected-parameter-help {
+  display: grid;
+  gap: 5px;
+  margin-top: 8px;
+  padding: 9px 10px;
+  border-radius: 10px;
+  background: rgba(203,189,255,.14);
+  color: #5b5d56;
+  font-size: 9px;
+  line-height: 1.45;
+}
+.selected-parameter-help:empty { display: none; }
+.selected-parameter-help p { margin: 0; }
+.selected-parameter-help p + p {
+  padding-top: 5px;
+  border-top: 1px solid rgba(23,24,22,.08);
+}
+
 .position-control-group,
 .size-control-group {
   display: grid;
