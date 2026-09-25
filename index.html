@@ -1,0 +1,341 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#171816" />
+    <meta
+      name="description"
+      content="Spacial Stage — an interactive motion grammar playground for spatial interfaces."
+    />
+    <title>Spacial Stage</title>
+    <script type="module" src="/src/demo.js"></script>
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <div class="brand-lockup">
+          <div class="brand-mark" aria-hidden="true">
+            <span></span>
+            <span></span>
+            <span></span>
+          </div>
+          <div>
+            <p class="eyebrow">Motion grammar playground</p>
+            <h1>Spacial Stage</h1>
+          </div>
+        </div>
+        <div class="topbar-actions">
+          <button id="resetButton" class="button button-secondary" type="button">Reset</button>
+          <button id="playButton" class="button button-primary" type="button">
+            <span class="play-icon" aria-hidden="true">▶</span>
+            Play animation
+          </button>
+        </div>
+      </header>
+
+      <main class="layout">
+        <aside class="controls" aria-label="Animation controls">
+          <section class="controls-intro">
+            <p class="eyebrow">Compose a behaviour</p>
+            <h2>Pick one term from each axis</h2>
+            <p>
+              The point is not to prove these names are right. The point is to make them
+              concrete enough that the bad names become obvious.
+            </p>
+          </section>
+
+          <form id="motionForm" class="control-stack">
+            <fieldset class="control-group">
+              <legend>Object role</legend>
+              <p class="control-help">What kind of thing is moving?</p>
+              <div class="segmented" data-control="role">
+                <label><input type="radio" name="role" value="shared" checked /><span>Shared</span></label>
+                <label><input type="radio" name="role" value="panel" /><span>Panel</span></label>
+                <label><input type="radio" name="role" value="content" /><span>Content</span></label>
+                <label><input type="radio" name="role" value="collection" /><span>Collection</span></label>
+                <label><input type="radio" name="role" value="custom" /><span>Custom</span></label>
+              </div>
+              <input
+                class="custom-term"
+                data-custom-for="role"
+                type="text"
+                placeholder="Your object-role term"
+                hidden
+              />
+            </fieldset>
+
+            <fieldset class="control-group">
+              <legend>Transition</legend>
+              <p class="control-help">What happens to its presence or layout space?</p>
+              <div class="segmented" data-control="transition">
+                <label><input type="radio" name="transition" value="push" checked /><span>Push</span></label>
+                <label><input type="radio" name="transition" value="reveal" /><span>Reveal</span></label>
+                <label><input type="radio" name="transition" value="slide" /><span>Slide</span></label>
+                <label><input type="radio" name="transition" value="collapse" /><span>Collapse</span></label>
+                <label><input type="radio" name="transition" value="custom" /><span>Custom</span></label>
+              </div>
+              <input
+                class="custom-term"
+                data-custom-for="transition"
+                type="text"
+                placeholder="Your transition term"
+                hidden
+              />
+            </fieldset>
+
+            <fieldset class="control-group">
+              <legend>Attachment</legend>
+              <p class="control-help">How is it attached to the layout?</p>
+              <div class="segmented" data-control="attachment">
+                <label><input type="radio" name="attachment" value="free" checked /><span>Free</span></label>
+                <label><input type="radio" name="attachment" value="float" /><span>Float</span></label>
+                <label><input type="radio" name="attachment" value="dock" /><span>Dock</span></label>
+                <label><input type="radio" name="attachment" value="pin" /><span>Pin</span></label>
+                <label><input type="radio" name="attachment" value="custom" /><span>Custom</span></label>
+              </div>
+              <input
+                class="custom-term"
+                data-custom-for="attachment"
+                type="text"
+                placeholder="Your attachment term"
+                hidden
+              />
+            </fieldset>
+
+            <fieldset class="control-group">
+              <legend>Coordination</legend>
+              <p class="control-help">How does it move relative to other objects?</p>
+              <div class="segmented" data-control="coordination">
+                <label><input type="radio" name="coordination" value="none" checked /><span>None</span></label>
+                <label><input type="radio" name="coordination" value="swap" /><span>Swap</span></label>
+                <label><input type="radio" name="coordination" value="stagger" /><span>Stagger</span></label>
+                <label><input type="radio" name="coordination" value="follow" /><span>Follow</span></label>
+                <label><input type="radio" name="coordination" value="custom" /><span>Custom</span></label>
+              </div>
+              <input
+                class="custom-term"
+                data-custom-for="coordination"
+                type="text"
+                placeholder="Your coordination term"
+                hidden
+              />
+            </fieldset>
+
+            <fieldset class="control-group">
+              <legend>Depth</legend>
+              <p class="control-help">
+                Where does it sit perceptually? This is where <strong>Focus</strong> currently lives.
+              </p>
+              <div class="segmented" data-control="depth">
+                <label><input type="radio" name="depth" value="background" /><span>Background</span></label>
+                <label><input type="radio" name="depth" value="focus" checked /><span>Focus</span></label>
+                <label><input type="radio" name="depth" value="foreground" /><span>Foreground</span></label>
+                <label><input type="radio" name="depth" value="custom" /><span>Custom</span></label>
+              </div>
+              <input
+                class="custom-term"
+                data-custom-for="depth"
+                type="text"
+                placeholder="Your depth term"
+                hidden
+              />
+            </fieldset>
+
+            <fieldset class="control-group">
+              <legend>Direction</legend>
+              <p class="control-help">Which edge or vector participates?</p>
+              <div class="segmented" data-control="direction">
+                <label><input type="radio" name="direction" value="auto" checked /><span>Auto</span></label>
+                <label><input type="radio" name="direction" value="top" /><span>Top</span></label>
+                <label><input type="radio" name="direction" value="right" /><span>Right</span></label>
+                <label><input type="radio" name="direction" value="bottom" /><span>Bottom</span></label>
+                <label><input type="radio" name="direction" value="left" /><span>Left</span></label>
+                <label><input type="radio" name="direction" value="custom" /><span>Custom</span></label>
+              </div>
+              <div class="custom-vector" data-custom-for="direction" hidden>
+                <label>
+                  <span>X vector</span>
+                  <input type="number" name="customX" value="-1" step="0.1" />
+                </label>
+                <label>
+                  <span>Y vector</span>
+                  <input type="number" name="customY" value="0" step="0.1" />
+                </label>
+              </div>
+            </fieldset>
+
+            <details class="custom-overrides">
+              <summary>
+                <span>
+                  <strong>Custom overrides</strong>
+                  <small>Always available. The escape hatch is part of the API.</small>
+                </span>
+                <span aria-hidden="true">＋</span>
+              </summary>
+              <div class="override-grid">
+                <label>
+                  <span>Distance</span>
+                  <input type="range" name="distance" min="0" max="520" value="180" />
+                  <output data-output="distance">180px</output>
+                </label>
+                <label>
+                  <span>Duration</span>
+                  <input type="range" name="duration" min="100" max="1800" step="50" value="700" />
+                  <output data-output="duration">700ms</output>
+                </label>
+                <label>
+                  <span>Stagger gap</span>
+                  <input type="range" name="stagger" min="0" max="240" step="10" value="80" />
+                  <output data-output="stagger">80ms</output>
+                </label>
+                <label>
+                  <span>Blur</span>
+                  <input type="range" name="blur" min="0" max="28" value="12" />
+                  <output data-output="blur">12px</output>
+                </label>
+                <label>
+                  <span>Scale</span>
+                  <input type="range" name="scale" min="70" max="130" value="100" />
+                  <output data-output="scale">1.00</output>
+                </label>
+                <label>
+                  <span>Opacity</span>
+                  <input type="range" name="opacity" min="10" max="100" value="100" />
+                  <output data-output="opacity">1.00</output>
+                </label>
+                <label class="override-wide">
+                  <span>Easing</span>
+                  <input
+                    type="text"
+                    name="easing"
+                    value="cubic-bezier(.2,.82,.24,1)"
+                    spellcheck="false"
+                  />
+                </label>
+              </div>
+            </details>
+          </form>
+        </aside>
+
+        <section class="playground">
+          <div class="preset-strip" aria-label="Example behaviours">
+            <span class="preset-label">Try:</span>
+            <button type="button" data-preset="cloudRail">Cloud rail</button>
+            <button type="button" data-preset="topHeader">Top header</button>
+            <button type="button" data-preset="sharedFocus">Shared focus</button>
+            <button type="button" data-preset="dockCard">Dock card</button>
+            <button type="button" data-preset="staggerCards">Stagger cards</button>
+            <button type="button" data-preset="followBadges">Follow</button>
+            <button type="button" data-preset="swapPanels">Swap</button>
+            <button type="button" data-preset="collapseSection">Collapse</button>
+          </div>
+
+          <div id="stage" class="stage" aria-live="polite">
+            <div class="stage-grid" aria-hidden="true"></div>
+
+            <header id="demoHeader" class="demo-header stage-object">
+              <span class="demo-dot"></span>
+              <span>Header surface</span>
+              <div class="demo-header-actions">
+                <i></i><i></i><i></i>
+              </div>
+            </header>
+
+            <aside id="demoPanel" class="demo-panel stage-object">
+              <span class="panel-handle"></span>
+              <p class="eyebrow">Panel</p>
+              <strong>History rail</strong>
+              <div class="mini-nav">
+                <span></span><span></span><span></span><span></span>
+              </div>
+            </aside>
+
+            <div id="sharedObject" class="shared-object stage-object">
+              <div class="shared-rings" aria-hidden="true">
+                <span></span><span></span><span></span>
+              </div>
+              <div class="shared-core">
+                <small>Shared visual</small>
+                <strong>Stage</strong>
+              </div>
+            </div>
+
+            <div id="contentObject" class="content-object stage-object">
+              <p class="eyebrow">Content</p>
+              <strong>Working surface</strong>
+              <p>Something meaningful lives here while the stage moves around it.</p>
+              <div class="content-bars"><span></span><span></span><span></span></div>
+            </div>
+
+            <div id="collectionObject" class="collection-object stage-object">
+              <article><span>01</span><strong>Observe</strong></article>
+              <article><span>02</span><strong>Orient</strong></article>
+              <article><span>03</span><strong>Move</strong></article>
+              <article><span>04</span><strong>Settle</strong></article>
+            </div>
+
+            <div id="swapObject" class="swap-object stage-object">
+              <p class="eyebrow">Swap target</p>
+              <strong>Second surface</strong>
+            </div>
+
+            <div id="followers" class="followers stage-object" aria-hidden="true">
+              <span>1</span><span>2</span><span>3</span>
+            </div>
+
+            <div class="stage-origin-label">stage</div>
+          </div>
+
+          <section class="spec-panel">
+            <div class="spec-heading">
+              <div>
+                <p class="eyebrow">Current phrase</p>
+                <h2 id="motionPhrase">Shared · Push · Free · Focus · Auto</h2>
+              </div>
+              <span id="statusBadge" class="status-badge">Ready</span>
+            </div>
+
+            <div class="spec-grid">
+              <div>
+                <p class="eyebrow">Library call</p>
+                <pre><code id="codePreview"></code></pre>
+              </div>
+              <div>
+                <p class="eyebrow">Declarative markup</p>
+                <pre><code id="markupPreview"></code></pre>
+              </div>
+            </div>
+          </section>
+
+          <section class="terminology-note">
+            <p class="eyebrow">Terminology under test</p>
+            <div class="term-cards">
+              <article>
+                <strong>Focus moved out of “Transition”</strong>
+                <p>
+                  Push, reveal and collapse describe what changes. Focus describes perceived depth.
+                  The playground keeps them separate so we can see if that feels natural.
+                </p>
+              </article>
+              <article>
+                <strong>“Locking” became “Attachment”</strong>
+                <p>
+                  Float, dock and pin describe the object's relationship to layout more clearly than
+                  “locking”.
+                </p>
+              </article>
+              <article>
+                <strong>“Interaction” became “Coordination”</strong>
+                <p>
+                  Swap, stagger and follow are relationships between moving objects, rather than
+                  user interactions.
+                </p>
+              </article>
+            </div>
+          </section>
+        </section>
+      </main>
+    </div>
+  </body>
+</html>
