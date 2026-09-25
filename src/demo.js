@@ -439,6 +439,8 @@ function updateSelectionOverlay() {
   selectionOverlay.style.top = (objectRect.top - stageRect.top) + "px";
   selectionOverlay.style.width = objectRect.width + "px";
   selectionOverlay.style.height = objectRect.height + "px";
+  selectionOverlay.style.borderRadius =
+    getComputedStyle(object.element).borderRadius || "12px";
 }
 
 function selectionOverlayLoop() {
