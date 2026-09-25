@@ -49,8 +49,15 @@
 
           <div id="stage" class="stage" data-stage data-active-state="home">
             <div class="stage-grid" aria-hidden="true"></div>
-            <div id="selectionOverlay" class="selection-overlay" aria-hidden="true">
+            <div id="selectionOverlay" class="selection-overlay">
               <span id="selectionOverlayLabel" class="selection-overlay-label">Selected</span>
+              <button
+                id="selectionResizeHandle"
+                class="selection-resize-handle"
+                type="button"
+                aria-label="Resize selected object"
+                title="Drag to resize"
+              ></button>
             </div>
 
             <div id="stageContent" class="stage-content" data-stage-content>
@@ -282,6 +289,35 @@
                 </div>
 
                 <p class="position-drag-hint">Tip: drag the selected object directly on the stage. Its coordinates are recalculated from these anchors.</p>
+              </fieldset>
+
+              <fieldset class="control-group size-control-group">
+                <legend>Size</legend>
+                <p class="control-help">Size is destination geometry. It is separate from Scale, which remains a visual depth/motion transform.</p>
+
+                <div class="position-control-section">
+                  <span class="position-control-label">Size units</span>
+                  <div class="segmented position-segmented">
+                    <label><input type="radio" name="sizeMode" value="natural" /><span>Natural</span></label>
+                    <label><input type="radio" name="sizeMode" value="absolute" /><span>Pixels</span></label>
+                    <label><input type="radio" name="sizeMode" value="percent" /><span>Percent</span></label>
+                  </div>
+                </div>
+
+                <div class="position-values size-values">
+                  <label>
+                    <span>Width</span>
+                    <input type="number" name="sizeWidth" min="1" step="1" />
+                    <small id="sizeWidthUnit">px</small>
+                  </label>
+                  <label>
+                    <span>Height</span>
+                    <input type="number" name="sizeHeight" min="1" step="1" />
+                    <small id="sizeHeightUnit">px</small>
+                  </label>
+                </div>
+
+                <p class="position-drag-hint">Drag the bottom-right handle on the selection frame to resize. Natural switches to Pixels on first resize.</p>
               </fieldset>
 
               <details class="custom-overrides" open>
