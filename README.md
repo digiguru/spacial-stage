@@ -28,7 +28,7 @@ For example, the same shared SVG can be:
 - focused + centred in **Room**;
 - background + left-weighted in **Cloud**.
 
-The destination belongs to the state. **Transition** describes how the object itself arrives there. **Layout effect** describes what that arrival does to neighbouring layout.
+The destination belongs to the state. **Animations** are zero or more effects describing how the object arrives there. **Layout effect** describes what that arrival does to neighbouring layout.
 
 ## Playground objects
 
@@ -48,21 +48,47 @@ The selected object is outlined by a separate presentation-layer overlay, so sel
 | Axis | Current terms | Question it answers |
 | --- | --- | --- |
 | Object role | Shared, Panel, Content, Collection | What kind of thing is this? |
-| Transition | Slide, Reveal, Fade, Collapse, Custom | How does the object itself arrive? |
+| Animations | Slide, Fade, Reveal, Focus, Collapse (0..many) | Which effects compose while the object arrives? |
 | Layout effect | Overlay, Push, Replace, Reflow, Custom | What happens to neighbouring layout? |
 | Attachment | Free, Float, Dock, Pin, Custom | Where does the destination belong relative to layout? |
 | Coordination | None, Swap, Stagger, Follow, Custom | How does its timing relate to other moving objects? |
-| Depth | Background, Focus, Foreground, Custom | Where does it sit perceptually? |
+| Depth | Background, Base, Foreground, Custom | Where does it finally sit perceptually? |
 | Direction / edge | Auto, Top, Right, Bottom, Left, Custom | Which vector or edge participates? |
 
-The split between **Transition** and **Layout effect** is intentional:
+The split between **Animations** and **Layout effect** is intentional:
 
 ```
-Panel + Reveal + Push + Dock + Foreground + Left
-Shared + Slide + Overlay + Free + Background + Right
+Panel + [Slide, Fade] + Push + Dock + Foreground + Left
+Shared + [Slide, Focus] + Overlay + Free + Base + Right
+Content + [] + Overlay + Free + Background + Top
 ```
+
+An empty animation list means the object snaps directly to its new destination. Effects compose independently:
+
+- **Slide** interpolates destination position and size from the previous state.
+- **Fade** arrives from transparent.
+- **Reveal** opens a directional clip/mask.
+- **Focus** resolves from extra blur and a softer scale into the destination appearance.
+- **Collapse** expands from a compressed directional edge.
+
+This also resolves the old overloaded word **Focus**. Focus is now only an animation. The middle destination depth is **Base**.
 
 These names are not considered final. The playground exists specifically to expose where the taxonomy feels awkward.
+
+## Depth: Background vs Base vs Foreground
+
+Depth describes the final perceptual plane, not the animation used to get there.
+
+- **Background** — lower stacking, more blur, lower opacity and a softened/receded appearance.
+- **Base** — normal focal plane: sharp, full-opacity, normal scale and middle stacking.
+- **Foreground** — higher stacking with a small visual scale lift above Base.
+- **Custom** — starts from Base and lets Blur, Scale, Opacity and Custom CSS define the destination.
+
+A useful combination is therefore `Focus animation + Base depth`: the object starts soft and resolves into the normal plane. `Focus animation + Background depth` is also valid: it resolves from even softer into a deliberately recessed destination.
+
+## State naming
+
+State names are editable directly in the playground. **+ State** creates and selects a state named **New State** immediately; there is no naming dialog. The active state's name can then be typed directly in the inspector.
 
 ## Position authoring
 
@@ -99,7 +125,7 @@ Direct resize also adjusts the stored anchored position so the top-left visual c
 
 Changing any motion parameter replays **only the selected object** from the previously selected named state into the current state using the newly edited configuration.
 
-That makes the playground useful for riffing on individual parameters: adjust Reveal vs Fade, change depth, alter docking, tweak duration or edit a position and immediately see how that object reaches its destination.
+That makes the playground useful for riffing on individual parameters: toggle Slide/Fade/Reveal/Focus/Collapse independently, combine several, remove all of them, change depth, alter docking, tweak duration or edit a position and immediately see how that object reaches its destination.
 
 The full-state Replay button still animates every object together.
 
@@ -130,7 +156,7 @@ For the selected object and state the playground shows two views.
 
 This contains:
 
-- every semantic parameter as CSS custom properties;
+- every semantic parameter as CSS custom properties, including the composed animation list;
 - destination width and height;
 - the destination transform;
 - depth-derived blur, opacity and scale;
@@ -156,7 +182,7 @@ The purpose is to make every bit of vocabulary traceable to actual browser behav
 - Keep routing/application state separate from presentation.
 - Treat named states as first-class concepts.
 - Make shared-object continuity reusable across TeamTools-style applications.
-- Keep Transition separate from Layout effect.
+- Keep composable Animations separate from Layout effect.
 - Make reduced motion a first-class outcome.
 - Always leave a Custom escape hatch.
 - Prove the vocabulary interactively before freezing the public API.
