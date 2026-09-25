@@ -169,173 +169,154 @@
                 </div>
                 <span id="stateDirtyBadge" class="state-chip">Saved</span>
               </div>
+              <label class="state-name-field">
+                <span>State name</span>
+                <input id="stateNameInput" type="text" maxlength="60" value="Home" />
+                <small>The tab label for this named destination. Edit it directly; no save dialog required.</small>
+              </label>
             </section>
 
             <form id="motionForm" class="control-stack">
               <fieldset class="control-group">
-                <legend>Transition into this state</legend>
-                <p class="control-help">How should this object itself travel or appear on the way to the destination?</p>
-                <div class="segmented">
-                  <label><input type="radio" name="transition" value="slide" /><span>Slide</span></label>
-                  <label><input type="radio" name="transition" value="reveal" /><span>Reveal</span></label>
-                  <label><input type="radio" name="transition" value="fade" /><span>Fade</span></label>
-                  <label><input type="radio" name="transition" value="collapse" /><span>Collapse</span></label>
-                  <label><input type="radio" name="transition" value="custom" /><span>Custom</span></label>
+                <legend>Animations</legend>
+                <p class="control-help">Choose zero, one or several effects. Zero means the object snaps straight to its destination state.</p>
+                <div class="segmented option-cards animation-options">
+                  <label><input type="checkbox" name="animations" value="slide" /><span><strong>Slide</strong><small>Interpolate position and size from the previous state into this destination.</small></span></label>
+                  <label><input type="checkbox" name="animations" value="fade" /><span><strong>Fade</strong><small>Arrive from transparent to the destination opacity.</small></span></label>
+                  <label><input type="checkbox" name="animations" value="reveal" /><span><strong>Reveal</strong><small>Open a directional clip or mask until the whole object is visible.</small></span></label>
+                  <label><input type="checkbox" name="animations" value="focus" /><span><strong>Focus</strong><small>Resolve from soft, blurred and slightly reduced into the destination appearance.</small></span></label>
+                  <label><input type="checkbox" name="animations" value="collapse" /><span><strong>Collapse</strong><small>Expand from a compressed edge into the full destination geometry.</small></span></label>
                 </div>
               </fieldset>
 
               <fieldset class="control-group">
                 <legend>Layout effect</legend>
-                <p class="control-help">What should happen to neighbouring layout while this object arrives?</p>
-                <div class="segmented">
-                  <label><input type="radio" name="layout" value="overlay" /><span>Overlay</span></label>
-                  <label><input type="radio" name="layout" value="push" /><span>Push</span></label>
-                  <label><input type="radio" name="layout" value="replace" /><span>Replace</span></label>
-                  <label><input type="radio" name="layout" value="reflow" /><span>Reflow</span></label>
-                  <label><input type="radio" name="layout" value="custom" /><span>Custom</span></label>
+                <p class="control-help">Controls what the object's arrival does to neighbouring stage content. This is separate from the object's own animations.</p>
+                <div class="segmented option-cards">
+                  <label><input type="radio" name="layout" value="overlay" /><span><strong>Overlay</strong><small>Move independently above existing content; neighbours do not react.</small></span></label>
+                  <label><input type="radio" name="layout" value="push" /><span><strong>Push</strong><small>Displace surrounding stage content away from the arriving object.</small></span></label>
+                  <label><input type="radio" name="layout" value="replace" /><span><strong>Replace</strong><small>Temporarily fade/soften surrounding content while this destination takes over.</small></span></label>
+                  <label><input type="radio" name="layout" value="reflow" /><span><strong>Reflow</strong><small>Compress and shift surrounding content to suggest a layout reorganisation.</small></span></label>
+                  <label><input type="radio" name="layout" value="custom" /><span><strong>Custom</strong><small>Reserve the semantic slot while supplying your own parent/container CSS.</small></span></label>
                 </div>
               </fieldset>
 
               <fieldset class="control-group">
                 <legend>Attachment</legend>
-                <p class="control-help">Where does the destination belong relative to the stage?</p>
-                <div class="segmented">
-                  <label><input type="radio" name="attachment" value="free" /><span>Free</span></label>
-                  <label><input type="radio" name="attachment" value="float" /><span>Float</span></label>
-                  <label><input type="radio" name="attachment" value="dock" /><span>Dock</span></label>
-                  <label><input type="radio" name="attachment" value="pin" /><span>Pin</span></label>
-                  <label><input type="radio" name="attachment" value="custom" /><span>Custom</span></label>
+                <p class="control-help">Defines how the destination position relates to the stage rather than how it animates.</p>
+                <div class="segmented option-cards">
+                  <label><input type="radio" name="attachment" value="free" /><span><strong>Free</strong><small>Use the authored anchors and offsets with no extra attachment behaviour.</small></span></label>
+                  <label><input type="radio" name="attachment" value="float" /><span><strong>Float</strong><small>Lift the destination slightly away from the stage plane for a loose floating feel.</small></span></label>
+                  <label><input type="radio" name="attachment" value="dock" /><span><strong>Dock</strong><small>Snap one axis to the selected stage edge while retaining the authored offset.</small></span></label>
+                  <label><input type="radio" name="attachment" value="pin" /><span><strong>Pin</strong><small>Keep the authored anchored destination stable without float or dock adjustment.</small></span></label>
+                  <label><input type="radio" name="attachment" value="custom" /><span><strong>Custom</strong><small>Keep the position model but apply your own attachment CSS or application logic.</small></span></label>
                 </div>
               </fieldset>
 
               <fieldset class="control-group">
                 <legend>Coordination</legend>
-                <p class="control-help">How does this object's timing relate to other moving objects?</p>
-                <div class="segmented">
-                  <label><input type="radio" name="coordination" value="none" /><span>None</span></label>
-                  <label><input type="radio" name="coordination" value="swap" /><span>Swap</span></label>
-                  <label><input type="radio" name="coordination" value="stagger" /><span>Stagger</span></label>
-                  <label><input type="radio" name="coordination" value="follow" /><span>Follow</span></label>
-                  <label><input type="radio" name="coordination" value="custom" /><span>Custom</span></label>
+                <p class="control-help">Controls timing relationships between this object, collections and other moving stage objects.</p>
+                <div class="segmented option-cards">
+                  <label><input type="radio" name="coordination" value="none" /><span><strong>None</strong><small>Animate independently with no additional timing relationship.</small></span></label>
+                  <label><input type="radio" name="coordination" value="swap" /><span><strong>Swap</strong><small>Offset paired participants so one hands the stage to the other.</small></span></label>
+                  <label><input type="radio" name="coordination" value="stagger" /><span><strong>Stagger</strong><small>Delay collection children by the Stagger gap to create a sequence.</small></span></label>
+                  <label><input type="radio" name="coordination" value="follow" /><span><strong>Follow</strong><small>Delay this object's hand-off relative to earlier stage objects.</small></span></label>
+                  <label><input type="radio" name="coordination" value="custom" /><span><strong>Custom</strong><small>Reserve coordination semantics for application-specific orchestration.</small></span></label>
                 </div>
               </fieldset>
 
               <fieldset class="control-group">
                 <legend>Depth</legend>
-                <p class="control-help">The perceptual layer the object occupies at the destination.</p>
-                <div class="segmented">
-                  <label><input type="radio" name="depth" value="background" /><span>Background</span></label>
-                  <label><input type="radio" name="depth" value="focus" /><span>Focus</span></label>
-                  <label><input type="radio" name="depth" value="foreground" /><span>Foreground</span></label>
-                  <label><input type="radio" name="depth" value="custom" /><span>Custom</span></label>
+                <p class="control-help">Where the object visually rests after animation. Depth is a destination property; Focus is now an animation effect above.</p>
+                <div class="segmented option-cards">
+                  <label><input type="radio" name="depth" value="background" /><span><strong>Background</strong><small>Recessed destination: low z-index, blurred, lower opacity and visually softened.</small></span></label>
+                  <label><input type="radio" name="depth" value="base" /><span><strong>Base</strong><small>Normal destination plane: sharp, full-opacity, normal scale and middle stacking.</small></span></label>
+                  <label><input type="radio" name="depth" value="foreground" /><span><strong>Foreground</strong><small>Raised destination: higher z-index and a small visual scale lift above Base.</small></span></label>
+                  <label><input type="radio" name="depth" value="custom" /><span><strong>Custom</strong><small>Start from the Base layer and use Blur, Scale, Opacity or Custom CSS to define your own depth.</small></span></label>
                 </div>
               </fieldset>
 
               <fieldset class="control-group">
                 <legend>Direction / edge</legend>
-                <p class="control-help">Used as the arrival vector and, for Dock, the edge to dock against.</p>
-                <div class="segmented">
-                  <label><input type="radio" name="direction" value="auto" /><span>Auto</span></label>
-                  <label><input type="radio" name="direction" value="top" /><span>Top</span></label>
-                  <label><input type="radio" name="direction" value="right" /><span>Right</span></label>
-                  <label><input type="radio" name="direction" value="bottom" /><span>Bottom</span></label>
-                  <label><input type="radio" name="direction" value="left" /><span>Left</span></label>
-                  <label><input type="radio" name="direction" value="custom" /><span>Custom</span></label>
+                <p class="control-help">Provides an edge/vector for Reveal, Collapse, Dock and layout effects. Slide itself travels between actual state positions.</p>
+                <div class="segmented option-cards">
+                  <label><input type="radio" name="direction" value="auto" /><span><strong>Auto</strong><small>Choose a sensible direction from the object's role: panels left, shared visuals right, content/collections bottom.</small></span></label>
+                  <label><input type="radio" name="direction" value="top" /><span><strong>Top</strong><small>Use the top edge or upward direction.</small></span></label>
+                  <label><input type="radio" name="direction" value="right" /><span><strong>Right</strong><small>Use the right edge or rightward direction.</small></span></label>
+                  <label><input type="radio" name="direction" value="bottom" /><span><strong>Bottom</strong><small>Use the bottom edge or downward direction.</small></span></label>
+                  <label><input type="radio" name="direction" value="left" /><span><strong>Left</strong><small>Use the left edge or leftward direction.</small></span></label>
+                  <label><input type="radio" name="direction" value="custom" /><span><strong>Custom</strong><small>Use the custom X/Y direction vector from Numeric overrides.</small></span></label>
                 </div>
               </fieldset>
 
-
               <fieldset class="control-group position-control-group">
                 <legend>Position</legend>
-                <p class="control-help">Anchor the object to the stage, then store its drag offset as pixels or a percentage of the stage.</p>
+                <p class="control-help">Defines the object's final destination coordinates. Dragging the object edits these values directly.</p>
 
                 <div class="position-control-section">
                   <span class="position-control-label">Horizontal anchor</span>
-                  <div class="segmented position-segmented">
-                    <label><input type="radio" name="horizontalAnchor" value="left" /><span>Left</span></label>
-                    <label><input type="radio" name="horizontalAnchor" value="center" /><span>Centre</span></label>
-                    <label><input type="radio" name="horizontalAnchor" value="right" /><span>Right</span></label>
+                  <div class="segmented option-cards compact-options">
+                    <label><input type="radio" name="horizontalAnchor" value="left" /><span><strong>Left</strong><small>Measure X offset from the stage's left edge.</small></span></label>
+                    <label><input type="radio" name="horizontalAnchor" value="center" /><span><strong>Centre</strong><small>Measure X offset from horizontal centre.</small></span></label>
+                    <label><input type="radio" name="horizontalAnchor" value="right" /><span><strong>Right</strong><small>Measure X offset from the stage's right edge.</small></span></label>
                   </div>
                 </div>
 
                 <div class="position-control-section">
                   <span class="position-control-label">Vertical anchor</span>
-                  <div class="segmented position-segmented">
-                    <label><input type="radio" name="verticalAnchor" value="top" /><span>Top</span></label>
-                    <label><input type="radio" name="verticalAnchor" value="center" /><span>Centre</span></label>
-                    <label><input type="radio" name="verticalAnchor" value="bottom" /><span>Bottom</span></label>
+                  <div class="segmented option-cards compact-options">
+                    <label><input type="radio" name="verticalAnchor" value="top" /><span><strong>Top</strong><small>Measure Y offset from the stage's top edge.</small></span></label>
+                    <label><input type="radio" name="verticalAnchor" value="center" /><span><strong>Centre</strong><small>Measure Y offset from vertical centre.</small></span></label>
+                    <label><input type="radio" name="verticalAnchor" value="bottom" /><span><strong>Bottom</strong><small>Measure Y offset from the stage's bottom edge.</small></span></label>
                   </div>
                 </div>
 
                 <div class="position-control-section">
                   <span class="position-control-label">Offset units</span>
-                  <div class="segmented position-segmented">
-                    <label><input type="radio" name="positionMode" value="absolute" /><span>Pixels</span></label>
-                    <label><input type="radio" name="positionMode" value="percent" /><span>Percent</span></label>
+                  <div class="segmented option-cards compact-options">
+                    <label><input type="radio" name="positionMode" value="absolute" /><span><strong>Pixels</strong><small>Store X/Y as fixed pixel offsets.</small></span></label>
+                    <label><input type="radio" name="positionMode" value="percent" /><span><strong>Percent</strong><small>Store X/Y as percentages of stage width/height.</small></span></label>
                   </div>
                 </div>
 
                 <div class="position-values">
-                  <label>
-                    <span>X offset</span>
-                    <input type="number" name="positionX" step="1" />
-                    <small id="positionXUnit">px</small>
-                  </label>
-                  <label>
-                    <span>Y offset</span>
-                    <input type="number" name="positionY" step="1" />
-                    <small id="positionYUnit">px</small>
-                  </label>
+                  <label><span>X offset</span><input type="number" name="positionX" step="1" /><small id="positionXUnit">px</small><em>Horizontal distance from the selected anchor.</em></label>
+                  <label><span>Y offset</span><input type="number" name="positionY" step="1" /><small id="positionYUnit">px</small><em>Vertical distance from the selected anchor.</em></label>
                 </div>
-
-                <p class="position-drag-hint">Tip: drag the selected object directly on the stage. Its coordinates are recalculated from these anchors.</p>
+                <p class="position-drag-hint">Drag the selected object directly on stage to author its destination position.</p>
               </fieldset>
 
               <fieldset class="control-group size-control-group">
                 <legend>Size</legend>
-                <p class="control-help">Size is destination geometry. It is separate from Scale, which remains a visual depth/motion transform.</p>
-
+                <p class="control-help">Destination geometry. Size changes width/height; Scale below is only a visual transform.</p>
                 <div class="position-control-section">
                   <span class="position-control-label">Size units</span>
-                  <div class="segmented position-segmented">
-                    <label><input type="radio" name="sizeMode" value="natural" /><span>Natural</span></label>
-                    <label><input type="radio" name="sizeMode" value="absolute" /><span>Pixels</span></label>
-                    <label><input type="radio" name="sizeMode" value="percent" /><span>Percent</span></label>
+                  <div class="segmented option-cards compact-options">
+                    <label><input type="radio" name="sizeMode" value="natural" /><span><strong>Natural</strong><small>Use the dimensions authored by the object's normal CSS.</small></span></label>
+                    <label><input type="radio" name="sizeMode" value="absolute" /><span><strong>Pixels</strong><small>Store an explicit width and height in pixels.</small></span></label>
+                    <label><input type="radio" name="sizeMode" value="percent" /><span><strong>Percent</strong><small>Store width/height relative to stage width/height.</small></span></label>
                   </div>
                 </div>
-
                 <div class="position-values size-values">
-                  <label>
-                    <span>Width</span>
-                    <input type="number" name="sizeWidth" min="1" step="1" />
-                    <small id="sizeWidthUnit">px</small>
-                  </label>
-                  <label>
-                    <span>Height</span>
-                    <input type="number" name="sizeHeight" min="1" step="1" />
-                    <small id="sizeHeightUnit">px</small>
-                  </label>
+                  <label><span>Width</span><input type="number" name="sizeWidth" min="1" step="1" /><small id="sizeWidthUnit">px</small><em>Final layout width before visual Scale.</em></label>
+                  <label><span>Height</span><input type="number" name="sizeHeight" min="1" step="1" /><small id="sizeHeightUnit">px</small><em>Final layout height before visual Scale.</em></label>
                 </div>
-
-                <p class="position-drag-hint">Drag the bottom-right handle on the selection frame to resize. Natural switches to Pixels on first resize.</p>
+                <p class="position-drag-hint">Drag the bottom-right destination handle to resize. Natural becomes Pixels on first resize.</p>
               </fieldset>
 
               <details class="custom-overrides" open>
-                <summary>
-                  <span><strong>Custom / numeric overrides</strong><small>Always available, regardless of presets.</small></span>
-                  <span aria-hidden="true">＋</span>
-                </summary>
+                <summary><span><strong>Numeric / custom parameters</strong><small>Fine-tune the presets without giving up the semantic model.</small></span><span aria-hidden="true">＋</span></summary>
                 <div class="override-grid">
-                  <label><span>Direction X</span><input type="number" name="customX" step="0.1" /><small>vector</small></label>
-                  <label><span>Direction Y</span><input type="number" name="customY" step="0.1" /><small>vector</small></label>
-                  <label><span>Distance</span><input type="range" name="distance" min="0" max="520" step="10" /><output data-output="distance"></output></label>
-                  <label><span>Duration</span><input type="range" name="duration" min="100" max="1800" step="50" /><output data-output="duration"></output></label>
-                  <label><span>Stagger gap</span><input type="range" name="stagger" min="0" max="240" step="10" /><output data-output="stagger"></output></label>
-                  <label><span>Blur</span><input type="range" name="blur" min="0" max="28" /><output data-output="blur"></output></label>
-                  <label><span>Scale</span><input type="range" name="scale" min="55" max="145" /><output data-output="scale"></output></label>
-                  <label><span>Opacity</span><input type="range" name="opacity" min="0" max="100" /><output data-output="opacity"></output></label>
-                  <label class="override-wide"><span>Easing</span><input type="text" name="easing" spellcheck="false" /></label>
-                  <label class="override-wide"><span>Custom CSS</span><textarea name="customCss" rows="4" spellcheck="false" placeholder="border-radius: 40px;&#10;mix-blend-mode: screen;"></textarea></label>
+                  <label><span>Direction X</span><input type="number" name="customX" step="0.1" /><small>Custom direction's horizontal vector component; used when Direction = Custom.</small></label>
+                  <label><span>Direction Y</span><input type="number" name="customY" step="0.1" /><small>Custom direction's vertical vector component; used when Direction = Custom.</small></label>
+                  <label><span>Distance</span><input type="range" name="distance" min="0" max="520" step="10" /><output data-output="distance"></output><small>Magnitude used by Push/Replace/Reflow and directional companion movement.</small></label>
+                  <label><span>Duration</span><input type="range" name="duration" min="100" max="1800" step="50" /><output data-output="duration"></output><small>Total time for this object's selected animations.</small></label>
+                  <label><span>Stagger gap</span><input type="range" name="stagger" min="0" max="240" step="10" /><output data-output="stagger"></output><small>Delay between collection children or followers.</small></label>
+                  <label><span>Blur</span><input type="range" name="blur" min="0" max="28" /><output data-output="blur"></output><small>Extra blur added to the chosen destination Depth.</small></label>
+                  <label><span>Scale</span><input type="range" name="scale" min="55" max="145" /><output data-output="scale"></output><small>Visual transform multiplier; does not change layout width/height.</small></label>
+                  <label><span>Opacity</span><input type="range" name="opacity" min="0" max="100" /><output data-output="opacity"></output><small>Multiplier applied to the destination Depth opacity.</small></label>
+                  <label class="override-wide"><span>Easing</span><input type="text" name="easing" spellcheck="false" /><small>CSS easing curve used for this object's animation timing.</small></label>
+                  <label class="override-wide"><span>Custom CSS</span><textarea name="customCss" rows="4" spellcheck="false" placeholder="border-radius: 40px;&#10;mix-blend-mode: screen;"></textarea><small>Declarations applied last to the destination frame as an escape hatch.</small></label>
                 </div>
               </details>
             </form>
