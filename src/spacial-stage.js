@@ -6,9 +6,8 @@ export const DIRECTIONS = Object.freeze({
 });
 
 export const DEPTHS = Object.freeze({
-  background: Object.freeze({ blur: 12, opacity: 0.34, scale: 1.08, z: 1 }),
-  base: Object.freeze({ blur: 0, opacity: 1, scale: 1, z: 10 }),
-  foreground: Object.freeze({ blur: 0, opacity: 1, scale: 1.04, z: 20 })
+  blur: Object.freeze({ blur: 12, opacity: 0.34, saturation: 0.82 }),
+  focus: Object.freeze({ blur: 0, opacity: 1, saturation: 1 })
 });
 
 export const ANIMATIONS = Object.freeze([
@@ -26,7 +25,7 @@ export const DEFAULT_SPEC = Object.freeze({
   layout: "overlay",
   attachment: "free",
   coordination: "none",
-  depth: "base",
+  depth: "focus",
   direction: "auto",
   horizontalAnchor: "center",
   verticalAnchor: "center",
@@ -42,6 +41,7 @@ export const DEFAULT_SPEC = Object.freeze({
   blur: 0,
   scale: 1,
   opacity: 1,
+  zIndex: 10,
   easing: "cubic-bezier(.2,.82,.24,1)",
   customVector: Object.freeze({ x: -1, y: 0 }),
   customCss: ""
@@ -82,6 +82,7 @@ export function normaliseSpec(input = {}) {
     blur: finiteNumber(input.blur, DEFAULT_SPEC.blur),
     scale: finiteNumber(input.scale, DEFAULT_SPEC.scale),
     opacity: finiteNumber(input.opacity, DEFAULT_SPEC.opacity),
+    zIndex: finiteNumber(input.zIndex, legacyDepthZIndex(input.depth)),
     easing: input.easing || DEFAULT_SPEC.easing,
     customCss: input.customCss || "",
     customVector: {
@@ -121,13 +122,12 @@ export function resolvedDirectionName(specInput = {}) {
 
 export function resolveDepth(specInput = {}) {
   const spec = normaliseSpec(specInput);
-  const preset = DEPTHS[spec.depth] || DEPTHS.base;
+  const preset = DEPTHS[spec.depth] || DEPTHS.focus;
 
   return {
     blur: Math.max(0, preset.blur + spec.blur),
     opacity: clamp(preset.opacity * spec.opacity, 0, 1),
-    scale: Math.max(0.05, preset.scale * spec.scale),
-    z: preset.z
+    saturation: clamp(preset.saturation, 0, 1)
   };
 }
 
@@ -265,13 +265,13 @@ export function destinationFrame(element, container, specInput = {}) {
     transform: transform({
       x: position.x,
       y: position.y,
-      scale: depth.scale,
+      scale: Math.max(0.05, spec.scale),
       rotation: position.rotation
     }),
     opacity: String(depth.opacity),
-    filter: `blur(${depth.blur}px) saturate(1)`,
+    filter: `blur(${depth.blur}px) saturate(${depth.saturation})`,
     clipPath: "inset(0% 0% 0% 0%)",
-    zIndex: String(depth.z)
+    zIndex: String(spec.zIndex)
   };
 
   return {
@@ -461,9 +461,11 @@ export function cssForElement({
     `  --stage-duration: ${spec.duration}ms;`,
     `  --stage-stagger: ${spec.stagger}ms;`,
     `  --stage-blur: ${depth.blur}px;`,
-    `  --stage-scale: ${trimNumber(depth.scale)};`,
+    `  --stage-softening: ${trimNumber(depth.saturation)};`,
+    `  --stage-scale: ${trimNumber(spec.scale)};`,
     `  --stage-opacity: ${trimNumber(depth.opacity)};`,
-    `  z-index: ${depth.z};`
+    `  --stage-z-index: ${trimNumber(spec.zIndex)};`,
+    `  z-index: var(--stage-z-index);`
   ];
 
   if (frame) {
@@ -476,7 +478,7 @@ export function cssForElement({
     );
   } else {
     lines.push(
-      "  filter: blur(var(--stage-blur));",
+      "  filter: blur(var(--stage-blur)) saturate(var(--stage-softening));",
       "  opacity: var(--stage-opacity);"
     );
   }
@@ -598,6 +600,7 @@ export function motionMarkup(specInput = {}) {
     `data-stage-attachment="${spec.attachment}"`,
     `data-stage-coordination="${spec.coordination}"`,
     `data-stage-depth="${spec.depth}"`,
+    `data-stage-z-index="${spec.zIndex}"`,
     `data-stage-direction="${spec.direction}"`,
     `data-stage-anchor-x="${spec.horizontalAnchor}"`,
     `data-stage-anchor-y="${spec.verticalAnchor}"`,
@@ -691,11 +694,22 @@ function normaliseAnimations(input = {}) {
 }
 
 function normaliseDepth(value) {
-  if (value === "focus") return "base";
-  if (value === "background" || value === "base" || value === "foreground" || value === "custom") {
-    return value;
+  if (value === "background" || value === "blur") return "blur";
+  if (
+    value === "base"
+    || value === "foreground"
+    || value === "custom"
+    || value === "focus"
+  ) {
+    return "focus";
   }
   return DEFAULT_SPEC.depth;
+}
+
+function legacyDepthZIndex(value) {
+  if (value === "background" || value === "blur") return 1;
+  if (value === "foreground") return 20;
+  return DEFAULT_SPEC.zIndex;
 }
 
 function normaliseHorizontalAnchor(value) {

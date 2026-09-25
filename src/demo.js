@@ -9,7 +9,6 @@ import {
   layoutCompanionFrames,
   normaliseSpec,
   positionValuesForCoordinates,
-  resolveDepth,
   resolvePosition,
   resolveSize,
   sizeValuesForDimensions
@@ -23,6 +22,7 @@ const form = document.querySelector("#motionForm");
 const stateTabs = document.querySelector("#stateTabs");
 const objectTabs = document.querySelector("#objectTabs");
 const addStateButton = document.querySelector("#addStateButton");
+const removeStateButton = document.querySelector("#removeStateButton");
 const resetButton = document.querySelector("#resetButton");
 const replayButton = document.querySelector("#replayButton");
 const stageStateLabel = document.querySelector("#stageStateLabel");
@@ -41,6 +41,7 @@ const positionXUnit = document.querySelector("#positionXUnit");
 const positionYUnit = document.querySelector("#positionYUnit");
 const sizeWidthUnit = document.querySelector("#sizeWidthUnit");
 const sizeHeightUnit = document.querySelector("#sizeHeightUnit");
+const zIndexWarning = document.querySelector("#zIndexWarning");
 
 const OBJECTS = Object.freeze({
   svg: {
@@ -74,7 +75,8 @@ const base = (role, overrides = {}) => normaliseSpec({
   layout: "overlay",
   attachment: "free",
   coordination: "none",
-  depth: "base",
+  depth: "focus",
+  zIndex: 10,
   direction: "auto",
   horizontalAnchor: "center",
   verticalAnchor: "center",
@@ -101,7 +103,8 @@ const DEFAULT_STATES = [
       svg: base("shared", {
         animations: ["slide"],
         layout: "overlay",
-        depth: "background",
+        depth: "blur",
+        zIndex: 1,
         direction: "right",
         horizontalAnchor: "right",
         verticalAnchor: "bottom",
@@ -116,7 +119,8 @@ const DEFAULT_STATES = [
         animations: ["reveal", "fade"],
         layout: "overlay",
         attachment: "free",
-        depth: "background",
+        depth: "blur",
+        zIndex: 1,
         direction: "left",
         horizontalAnchor: "left",
         verticalAnchor: "center",
@@ -129,7 +133,8 @@ const DEFAULT_STATES = [
       copy: base("content", {
         animations: ["reveal"],
         layout: "overlay",
-        depth: "base",
+        depth: "focus",
+        zIndex: 10,
         direction: "left",
         horizontalAnchor: "left",
         verticalAnchor: "center",
@@ -144,7 +149,8 @@ const DEFAULT_STATES = [
         layout: "overlay",
         attachment: "float",
         coordination: "stagger",
-        depth: "foreground",
+        depth: "focus",
+        zIndex: 20,
         direction: "bottom",
         horizontalAnchor: "right",
         verticalAnchor: "bottom",
@@ -166,7 +172,8 @@ const DEFAULT_STATES = [
       svg: base("shared", {
         animations: ["slide", "focus"],
         layout: "overlay",
-        depth: "base",
+        depth: "focus",
+        zIndex: 10,
         direction: "left",
         horizontalAnchor: "center",
         verticalAnchor: "center",
@@ -181,7 +188,8 @@ const DEFAULT_STATES = [
         animations: ["slide", "fade"],
         layout: "push",
         attachment: "dock",
-        depth: "foreground",
+        depth: "focus",
+        zIndex: 20,
         direction: "left",
         horizontalAnchor: "left",
         verticalAnchor: "center",
@@ -195,7 +203,8 @@ const DEFAULT_STATES = [
       copy: base("content", {
         animations: ["fade"],
         layout: "overlay",
-        depth: "background",
+        depth: "blur",
+        zIndex: 1,
         direction: "top",
         horizontalAnchor: "right",
         verticalAnchor: "top",
@@ -212,7 +221,8 @@ const DEFAULT_STATES = [
         layout: "overlay",
         attachment: "float",
         coordination: "stagger",
-        depth: "foreground",
+        depth: "focus",
+        zIndex: 20,
         direction: "right",
         horizontalAnchor: "right",
         verticalAnchor: "top",
@@ -233,7 +243,8 @@ const DEFAULT_STATES = [
       svg: base("shared", {
         animations: ["slide"],
         layout: "overlay",
-        depth: "background",
+        depth: "blur",
+        zIndex: 1,
         direction: "left",
         horizontalAnchor: "left",
         verticalAnchor: "center",
@@ -248,7 +259,8 @@ const DEFAULT_STATES = [
         animations: ["slide"],
         layout: "push",
         attachment: "dock",
-        depth: "foreground",
+        depth: "focus",
+        zIndex: 20,
         direction: "left",
         horizontalAnchor: "left",
         verticalAnchor: "center",
@@ -261,7 +273,8 @@ const DEFAULT_STATES = [
       copy: base("content", {
         animations: ["reveal"],
         layout: "overlay",
-        depth: "base",
+        depth: "focus",
+        zIndex: 10,
         direction: "top",
         horizontalAnchor: "right",
         verticalAnchor: "top",
@@ -277,7 +290,8 @@ const DEFAULT_STATES = [
         layout: "overlay",
         attachment: "float",
         coordination: "follow",
-        depth: "foreground",
+        depth: "focus",
+        zIndex: 20,
         direction: "right",
         horizontalAnchor: "right",
         verticalAnchor: "bottom",
@@ -377,6 +391,7 @@ function replaySourceState() {
 
 function renderStateTabs() {
   stateTabs.replaceChildren();
+  removeStateButton.disabled = model.states.length <= 1;
 
   for (const state of model.states) {
     const button = document.createElement("button");
@@ -428,6 +443,7 @@ function syncSelection() {
 
   setForm(activeSpec());
   updateCssInspector();
+  updateZIndexWarning();
   updateSelectionOverlay();
 }
 
@@ -698,6 +714,7 @@ function setForm(specInput) {
   form.elements.blur.value = spec.blur;
   form.elements.scale.value = Math.round(spec.scale * 100);
   form.elements.opacity.value = Math.round(spec.opacity * 100);
+  form.elements.zIndex.value = spec.zIndex;
   form.elements.easing.value = spec.easing;
   form.elements.customCss.value = spec.customCss;
 
@@ -738,6 +755,7 @@ function readForm() {
     blur: Number(form.elements.blur.value),
     scale: Number(form.elements.scale.value) / 100,
     opacity: Number(form.elements.opacity.value) / 100,
+    zIndex: Number(form.elements.zIndex.value),
     easing: form.elements.easing.value.trim(),
     customCss: form.elements.customCss.value
   });
@@ -802,6 +820,7 @@ function updateSelectedSpec(event) {
   refreshParameterHelp();
   saveModel();
   updateCssInspector();
+  updateZIndexWarning();
   updateSelectionOverlay();
   scheduleSelectedReplay();
 }
@@ -956,6 +975,26 @@ function syncSizeInputs(sizeMode) {
   form.elements.sizeHeight.disabled = disabled;
 }
 
+function updateZIndexWarning() {
+  const values = model.states.map((state) => ({
+    name: state.name,
+    zIndex: normaliseSpec(state.objects[selectedObjectId]).zIndex
+  }));
+  const unique = new Set(values.map((item) => item.zIndex));
+
+  if (unique.size <= 1) {
+    zIndexWarning.hidden = true;
+    zIndexWarning.textContent = "";
+    return;
+  }
+
+  zIndexWarning.hidden = false;
+  zIndexWarning.textContent =
+    "Z-index differs between states: "
+    + values.map((item) => item.name + " " + item.zIndex).join(" · ")
+    + ". This can change stacking order during transitions.";
+}
+
 function addState() {
   const source = activeState();
   const name = "New State";
@@ -979,6 +1018,32 @@ function addState() {
   });
 }
 
+function removeActiveState() {
+  if (model.states.length <= 1) return;
+
+  clearTimeout(replayTimer);
+  replaySequence += 1;
+  cancelObjectAnimations();
+
+  const index = model.states.findIndex((state) => state.id === activeStateId);
+  if (index < 0) return;
+
+  const removedId = activeStateId;
+  model.states.splice(index, 1);
+
+  const nextState = model.states[Math.min(index, model.states.length - 1)];
+  activeStateId = nextState.id;
+
+  if (previousStateId === removedId || !stateById(previousStateId)) {
+    previousStateId = null;
+  }
+
+  applyStateImmediately(nextState);
+  saveModel();
+  renderStateTabs();
+  syncSelection();
+}
+
 function renameActiveState(value) {
   const state = activeState();
   const name = String(value).replace(/\s+/g, " ").slice(0, 60);
@@ -991,6 +1056,7 @@ function renameActiveState(value) {
   const activeTab = stateTabs.querySelector(`[data-state-id="${state.id}"] span`);
   if (activeTab) activeTab.textContent = state.name;
 
+  updateZIndexWarning();
   saveModel();
 }
 
@@ -1178,7 +1244,7 @@ function moveResize(event) {
   const object = OBJECTS[resizeState.objectId];
   const state = activeState();
   const spec = resizeState.startSpec;
-  const depthScale = resolveDepth(spec).scale || 1;
+  const depthScale = Math.max(0.05, spec.scale || 1);
   const deltaX = event.clientX - resizeState.startClientX;
   const deltaY = event.clientY - resizeState.startClientY;
 
@@ -1348,6 +1414,7 @@ form.addEventListener("change", (event) => {
 });
 
 addStateButton.addEventListener("click", addState);
+removeStateButton.addEventListener("click", removeActiveState);
 stateNameInput.addEventListener("input", (event) => {
   renameActiveState(event.target.value);
 });

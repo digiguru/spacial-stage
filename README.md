@@ -52,15 +52,16 @@ The selected object is outlined by a separate presentation-layer overlay, so sel
 | Layout effect | Overlay, Push, Replace, Reflow, Custom | What happens to neighbouring layout? |
 | Attachment | Free, Float, Dock, Pin, Custom | Where does the destination belong relative to layout? |
 | Coordination | None, Swap, Stagger, Follow, Custom | How does its timing relate to other moving objects? |
-| Depth | Background, Base, Foreground, Custom | Where does it finally sit perceptually? |
+| Depth | Blur, Focus | Should the destination be softened/recessed or visually sharp? |
+| Z-index | Integer | What explicit stacking order should the destination use? |
 | Direction / edge | Auto, Top, Right, Bottom, Left, Custom | Which vector or edge participates? |
 
 The split between **Animations** and **Layout effect** is intentional:
 
 ```
-Panel + [Slide, Fade] + Push + Dock + Foreground + Left
-Shared + [Slide, Focus] + Overlay + Free + Base + Right
-Content + [] + Overlay + Free + Background + Top
+Panel + [Slide, Fade] + Push + Dock + Focus + z20 + Left
+Shared + [Slide, Focus] + Overlay + Free + Blur + z1 + Right
+Content + [] + Overlay + Free + Focus + z10 + Top
 ```
 
 An empty animation list means the object snaps directly to its new destination. Effects compose independently:
@@ -75,20 +76,45 @@ This also resolves the old overloaded word **Focus**. Focus is now only an anima
 
 These names are not considered final. The playground exists specifically to expose where the taxonomy feels awkward.
 
-## Depth: Background vs Base vs Foreground
+## Depth: Blur vs Focus
 
-Depth describes the final perceptual plane, not the animation used to get there.
+Depth is now intentionally narrow. It controls only the destination's visual softness:
 
-- **Background** — lower stacking, more blur, lower opacity and a softened/receded appearance.
-- **Base** — normal focal plane: sharp, full-opacity, normal scale and middle stacking.
-- **Foreground** — higher stacking with a small visual scale lift above Base.
-- **Custom** — starts from Base and lets Blur, Scale, Opacity and Custom CSS define the destination.
+- **Blur** — stronger blur, reduced saturation/softening and lower opacity.
+- **Focus** — sharp, fully saturated and full-opacity.
 
-A useful combination is therefore `Focus animation + Base depth`: the object starts soft and resolves into the normal plane. `Focus animation + Background depth` is also valid: it resolves from even softer into a deliberately recessed destination.
+Depth does **not** control scale or stacking order.
 
-## State naming
+Scale remains an explicit numeric transform. Stacking is authored separately with **Z-index**.
+
+Old saved presets migrate without losing their old stacking intent:
+
+- Background → Blur + z-index 1
+- Base → Focus + z-index 10
+- Foreground → Focus + z-index 20
+
+If one object's z-index differs across named states, the inspector shows a warning listing the values. This matters because changing z-index between states can change which object visually crosses above another during a transition.
+
+## State naming and removal
 
 State names are editable directly in the playground. **+ State** creates and selects a state named **New State** immediately; there is no naming dialog. The active state's name can then be typed directly in the inspector.
+
+**− State** removes the active state immediately and selects the nearest remaining state. The final remaining state cannot be removed.
+
+## How Push interacts with object animation
+
+**Push is a layout companion effect, not an object animation.**
+
+For the panel example:
+
+1. The panel itself follows its selected object animations such as Slide + Fade.
+2. Because the panel's Layout effect is Push, the shared `stageContent` container is animated in the opposite direction to the panel's Direction.
+3. The panel lives outside that shared content container, so it is not pushed along with the content it is displacing.
+4. The shared content returns to its normal position by the end of the transition.
+
+The current playground therefore treats Push as a temporary "make room while this arrives" gesture, not persistent reflow.
+
+Layout effects are currently coordinated globally per state transition. If several objects request non-Overlay layout effects at once, the playground prefers the panel's layout effect; if there is no panel candidate, it uses the first non-Overlay request. Individual object animations still run independently.
 
 ## Position authoring
 
@@ -143,6 +169,7 @@ Every object/state also exposes numeric and raw-CSS escape hatches:
 - blur;
 - scale;
 - opacity;
+- explicit z-index;
 - easing;
 - custom CSS declarations.
 
@@ -159,8 +186,8 @@ This contains:
 - every semantic parameter as CSS custom properties, including the composed animation list;
 - destination width and height;
 - the destination transform;
-- depth-derived blur, opacity and scale;
-- z-index;
+- depth-derived blur, softening and opacity;
+- explicit scale and z-index;
 - custom CSS appended after generated declarations.
 
 ### Parent / group CSS

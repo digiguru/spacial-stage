@@ -34,7 +34,10 @@
           <small>Each tab stores a destination configuration for every object.</small>
         </div>
         <div id="stateTabs" class="state-tabs"></div>
-        <button id="addStateButton" class="state-add" type="button" aria-label="Add state">＋ State</button>
+        <div class="state-actions">
+          <button id="removeStateButton" class="state-remove" type="button" aria-label="Remove active state" title="Remove active state">− State</button>
+          <button id="addStateButton" class="state-add" type="button" aria-label="Add state">＋ State</button>
+        </div>
       </nav>
 
       <main class="workspace">
@@ -195,7 +198,7 @@
                 <p class="control-help">Controls what the object's arrival does to neighbouring stage content. This is separate from the object's own animations.</p>
                 <div class="segmented option-cards">
                   <label><input type="radio" name="layout" value="overlay" data-help="Move independently above existing content; neighbours do not react." /><span><strong>Overlay</strong></span></label>
-                  <label><input type="radio" name="layout" value="push" data-help="Displace surrounding stage content away from the arriving object." /><span><strong>Push</strong></span></label>
+                  <label><input type="radio" name="layout" value="push" data-help="Temporarily moves the shared stage-content container away from this object's Direction while this object animates independently, then returns the shared content to its normal position. If several objects request layout effects in one transition, the panel's effect wins; otherwise the first non-overlay effect is used." /><span><strong>Push</strong></span></label>
                   <label><input type="radio" name="layout" value="replace" data-help="Temporarily fade/soften surrounding content while this destination takes over." /><span><strong>Replace</strong></span></label>
                   <label><input type="radio" name="layout" value="reflow" data-help="Compress and shift surrounding content to suggest a layout reorganisation." /><span><strong>Reflow</strong></span></label>
                   <label><input type="radio" name="layout" value="custom" data-help="Reserve the semantic slot while supplying your own parent/container CSS." /><span><strong>Custom</strong></span></label>
@@ -231,14 +234,23 @@
 
               <fieldset class="control-group">
                 <legend>Depth</legend>
-                <p class="control-help">Where the object visually rests after animation. Depth is a destination property; Focus is now an animation effect above.</p>
+                <p class="control-help">Depth now controls only visual softness: opacity, desaturation/softening and blur. Stacking order is handled separately by Z-index.</p>
                 <div class="segmented option-cards">
-                  <label><input type="radio" name="depth" value="background" data-help="Recessed destination: low z-index, blurred, lower opacity and visually softened." /><span><strong>Background</strong></span></label>
-                  <label><input type="radio" name="depth" value="base" data-help="Normal destination plane: sharp, full-opacity, normal scale and middle stacking." /><span><strong>Base</strong></span></label>
-                  <label><input type="radio" name="depth" value="foreground" data-help="Raised destination: higher z-index and a small visual scale lift above Base." /><span><strong>Foreground</strong></span></label>
-                  <label><input type="radio" name="depth" value="custom" data-help="Start from the Base layer and use Blur, Scale, Opacity or Custom CSS to define your own depth." /><span><strong>Custom</strong></span></label>
+                  <label><input type="radio" name="depth" value="blur" data-help="Soften and recess the destination with stronger blur, reduced saturation and lower opacity. This does not change scale or z-index." /><span><strong>Blur</strong></span></label>
+                  <label><input type="radio" name="depth" value="focus" data-help="Keep the destination sharp, fully saturated and at full destination opacity. This does not change scale or z-index." /><span><strong>Focus</strong></span></label>
                 </div>
                 <div id="depthHelp" class="selected-parameter-help" data-help-for="depth" aria-live="polite"></div>
+              </fieldset>
+
+              <fieldset class="control-group z-index-control-group">
+                <legend>Z-index</legend>
+                <p class="control-help">Controls stacking order independently from Depth. Higher numbers sit above lower numbers.</p>
+                <label class="single-value-control">
+                  <span>Z-index</span>
+                  <input type="number" name="zIndex" step="1" />
+                  <small>Destination stacking order for this object in the active state.</small>
+                </label>
+                <div id="zIndexWarning" class="z-index-warning" role="status" aria-live="polite" hidden></div>
               </fieldset>
 
               <fieldset class="control-group">
