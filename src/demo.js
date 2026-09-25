@@ -71,7 +71,6 @@ for (const object of Object.values(OBJECTS)) {
 
 const base = (role, overrides = {}) => normaliseSpec({
   role,
-  animations: ["slide"],
   layout: "overlay",
   attachment: "free",
   coordination: "none",
