@@ -7,17 +7,26 @@ export const DIRECTIONS = Object.freeze({
 
 export const DEPTHS = Object.freeze({
   background: Object.freeze({ blur: 12, opacity: 0.34, scale: 1.08, z: 1 }),
-  focus: Object.freeze({ blur: 0, opacity: 1, scale: 1, z: 10 }),
+  base: Object.freeze({ blur: 0, opacity: 1, scale: 1, z: 10 }),
   foreground: Object.freeze({ blur: 0, opacity: 1, scale: 1.04, z: 20 })
 });
 
+export const ANIMATIONS = Object.freeze([
+  "slide",
+  "fade",
+  "reveal",
+  "focus",
+  "collapse"
+]);
+
 export const DEFAULT_SPEC = Object.freeze({
   role: "content",
+  animations: Object.freeze(["slide"]),
   transition: "slide",
   layout: "overlay",
   attachment: "free",
   coordination: "none",
-  depth: "focus",
+  depth: "base",
   direction: "auto",
   horizontalAnchor: "center",
   verticalAnchor: "center",
@@ -51,10 +60,14 @@ export function normaliseSpec(input = {}) {
     ...DEFAULT_SPEC.customVector,
     ...(input.customVector || {})
   };
+  const animations = normaliseAnimations(input);
 
   return {
     ...DEFAULT_SPEC,
     ...input,
+    animations,
+    transition: animations[0] || "none",
+    depth: normaliseDepth(input.depth),
     horizontalAnchor: normaliseHorizontalAnchor(input.horizontalAnchor),
     verticalAnchor: normaliseVerticalAnchor(input.verticalAnchor),
     positionMode: input.positionMode === "percent" ? "percent" : "absolute",
@@ -108,7 +121,7 @@ export function resolvedDirectionName(specInput = {}) {
 
 export function resolveDepth(specInput = {}) {
   const spec = normaliseSpec(specInput);
-  const preset = DEPTHS[spec.depth] || DEPTHS.focus;
+  const preset = DEPTHS[spec.depth] || DEPTHS.base;
 
   return {
     blur: Math.max(0, preset.blur + spec.blur),
@@ -272,45 +285,40 @@ export function transitionFrames(element, container, fromSpecInput, toSpecInput)
   const toSpec = normaliseSpec(toSpecInput);
   const from = destinationFrame(element, container, fromSpec);
   const to = destinationFrame(element, container, toSpec);
-  const vector = resolveDirection(toSpec);
+  const effects = new Set(toSpec.animations);
+
+  if (!effects.size) {
+    return [to];
+  }
+
+  const start = { ...to };
   const direction = resolvedDirectionName(toSpec);
-  const distance = toSpec.distance;
 
-  if (toSpec.transition === "reveal") {
-    const masked = {
-      ...to,
-      transform: addTranslation(
-        to.transform,
-        vector.x * Math.min(distance * 0.22, 70),
-        vector.y * Math.min(distance * 0.22, 70)
-      ),
-      opacity: String(Math.min(Number(to.opacity) || 1, 0.12)),
-      filter: `blur(${Math.max(resolveDepth(toSpec).blur, 7)}px) saturate(.92)`,
-      clipPath: revealClip(direction)
-    };
-    return [from, masked, to];
+  if (effects.has("slide")) {
+    start.width = from.width;
+    start.height = from.height;
+    start.transform = from.transform;
   }
 
-  if (toSpec.transition === "fade") {
-    const faded = {
-      ...to,
-      opacity: "0",
-      filter: `blur(${Math.max(resolveDepth(toSpec).blur, 8)}px) saturate(.92)`
-    };
-    return [from, faded, to];
+  if (effects.has("fade")) {
+    start.opacity = "0";
   }
 
-  if (toSpec.transition === "collapse") {
-    const midpoint = {
-      ...to,
-      transform: collapseTransform(to.transform, direction),
-      opacity: String(Math.min(Number(to.opacity) || 1, 0.2)),
-      clipPath: revealClip(direction)
-    };
-    return [from, midpoint, to];
+  if (effects.has("reveal")) {
+    start.clipPath = revealClip(direction);
   }
 
-  return [from, to];
+  if (effects.has("focus")) {
+    start.filter = `blur(${Math.max(resolveDepth(toSpec).blur + 12, 12)}px) saturate(.82)`;
+    start.transform = `${start.transform} scale(.94)`;
+  }
+
+  if (effects.has("collapse")) {
+    start.transform = collapseTransform(start.transform, direction);
+    start.clipPath = revealClip(direction);
+  }
+
+  return [start, to];
 }
 
 export async function animateBetweenStates(
@@ -328,7 +336,11 @@ export async function animateBetweenStates(
   const target = destinationFrame(element, container, toSpec);
   const spec = normaliseSpec(toSpec);
 
-  if (reducedMotion || typeof element.animate !== "function") {
+  if (
+    reducedMotion
+    || typeof element.animate !== "function"
+    || spec.animations.length === 0
+  ) {
     applyFrame(element, target);
     return null;
   }
@@ -431,7 +443,7 @@ export function cssForElement({
   const sizeUnit = spec.sizeMode === "percent" ? "%" : "px";
   const lines = [
     `${selector}[data-stage-state="${cssEscape(stateName)}"] {`,
-    `  --stage-transition: ${spec.transition};`,
+    `  --stage-animations: ${spec.animations.length ? spec.animations.join(" ") : "none"};`,
     `  --stage-layout: ${spec.layout};`,
     `  --stage-attachment: ${spec.attachment};`,
     `  --stage-coordination: ${spec.coordination};`,
@@ -581,7 +593,7 @@ export function motionMarkup(specInput = {}) {
   const spec = normaliseSpec(specInput);
 
   return [
-    `data-stage-transition="${spec.transition}"`,
+    `data-stage-animations="${spec.animations.join(" ")}"`,
     `data-stage-layout="${spec.layout}"`,
     `data-stage-attachment="${spec.attachment}"`,
     `data-stage-coordination="${spec.coordination}"`,
@@ -658,6 +670,32 @@ function verticalAnchorTop(metrics, anchor) {
   if (anchor === "top") return 0;
   if (anchor === "bottom") return metrics.stageHeight - metrics.elementHeight;
   return metrics.stageHeight / 2 - metrics.elementHeight / 2;
+}
+
+function normaliseAnimations(input = {}) {
+  if (Array.isArray(input.animations)) {
+    return [...new Set(
+      input.animations
+        .map((value) => String(value).toLowerCase())
+        .filter((value) => ANIMATIONS.includes(value))
+    )];
+  }
+
+  const legacy = String(input.transition || "").toLowerCase();
+
+  if (ANIMATIONS.includes(legacy)) {
+    return [legacy];
+  }
+
+  return [...DEFAULT_SPEC.animations];
+}
+
+function normaliseDepth(value) {
+  if (value === "focus") return "base";
+  if (value === "background" || value === "base" || value === "foreground" || value === "custom") {
+    return value;
+  }
+  return DEFAULT_SPEC.depth;
 }
 
 function normaliseHorizontalAnchor(value) {
