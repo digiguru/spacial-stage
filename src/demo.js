@@ -9,7 +9,6 @@ import {
   layoutCompanionFrames,
   normaliseSpec,
   positionValuesForCoordinates,
-  resolveDepth,
   resolvePosition,
   resolveSize,
   sizeValuesForDimensions
