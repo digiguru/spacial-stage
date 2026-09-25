@@ -6,18 +6,20 @@ export const DIRECTIONS = Object.freeze({
 });
 
 export const DEPTHS = Object.freeze({
-  background: Object.freeze({ blur: 12, opacity: 0.42, scale: 1.05, z: 0 }),
+  background: Object.freeze({ blur: 12, opacity: 0.34, scale: 1.08, z: 1 }),
   focus: Object.freeze({ blur: 0, opacity: 1, scale: 1, z: 10 }),
-  foreground: Object.freeze({ blur: 0, opacity: 1, scale: 1.06, z: 20 })
+  foreground: Object.freeze({ blur: 0, opacity: 1, scale: 1.04, z: 20 })
 });
 
 export const DEFAULT_SPEC = Object.freeze({
-  role: "shared",
-  transition: "push",
+  role: "content",
+  transition: "slide",
   attachment: "free",
   coordination: "none",
   depth: "focus",
   direction: "auto",
+  offsetX: 0,
+  offsetY: 0,
   distance: 180,
   duration: 700,
   stagger: 80,
@@ -25,46 +27,36 @@ export const DEFAULT_SPEC = Object.freeze({
   scale: 1,
   opacity: 1,
   easing: "cubic-bezier(.2,.82,.24,1)",
-  customVector: Object.freeze({ x: -1, y: 0 })
+  customCss: ""
 });
 
 const AUTO_DIRECTIONS = Object.freeze({
-  panel: "left",
   shared: "right",
+  panel: "left",
   content: "bottom",
   collection: "bottom",
   custom: "left"
 });
 
 export function normaliseSpec(input = {}) {
-  const customVector = {
-    ...DEFAULT_SPEC.customVector,
-    ...(input.customVector || {})
-  };
-
   return {
     ...DEFAULT_SPEC,
     ...input,
+    offsetX: finiteNumber(input.offsetX, DEFAULT_SPEC.offsetX),
+    offsetY: finiteNumber(input.offsetY, DEFAULT_SPEC.offsetY),
     distance: finiteNumber(input.distance, DEFAULT_SPEC.distance),
     duration: finiteNumber(input.duration, DEFAULT_SPEC.duration),
     stagger: finiteNumber(input.stagger, DEFAULT_SPEC.stagger),
     blur: finiteNumber(input.blur, DEFAULT_SPEC.blur),
     scale: finiteNumber(input.scale, DEFAULT_SPEC.scale),
     opacity: finiteNumber(input.opacity, DEFAULT_SPEC.opacity),
-    customVector: {
-      x: finiteNumber(customVector.x, -1),
-      y: finiteNumber(customVector.y, 0)
-    }
+    easing: input.easing || DEFAULT_SPEC.easing,
+    customCss: input.customCss || ""
   };
 }
 
 export function resolveDirection(specInput = {}) {
   const spec = normaliseSpec(specInput);
-
-  if (spec.direction === "custom") {
-    return normaliseVector(spec.customVector);
-  }
-
   const named = spec.direction === "auto"
     ? AUTO_DIRECTIONS[spec.role] || "left"
     : spec.direction;
@@ -72,270 +64,290 @@ export function resolveDirection(specInput = {}) {
   return DIRECTIONS[named] || DIRECTIONS.left;
 }
 
+export function resolvedDirectionName(specInput = {}) {
+  const spec = normaliseSpec(specInput);
+  return spec.direction === "auto"
+    ? AUTO_DIRECTIONS[spec.role] || "left"
+    : (DIRECTIONS[spec.direction] ? spec.direction : "left");
+}
+
 export function resolveDepth(specInput = {}) {
   const spec = normaliseSpec(specInput);
-  const base = DEPTHS[spec.depth] || DEPTHS.focus;
+  const preset = DEPTHS[spec.depth] || DEPTHS.focus;
 
   return {
-    blur: Math.max(0, base.blur + spec.blur),
-    opacity: clamp(base.opacity * spec.opacity, 0, 1),
-    scale: Math.max(0.05, base.scale * spec.scale),
-    z: base.z
+    blur: Math.max(0, preset.blur + spec.blur),
+    opacity: clamp(preset.opacity * spec.opacity, 0, 1),
+    scale: Math.max(0.05, preset.scale * spec.scale),
+    z: preset.z
   };
 }
 
-export function buildTransitionFrames(specInput = {}, options = {}) {
+export function destinationFrame(element, container, specInput = {}) {
   const spec = normaliseSpec(specInput);
-  const vector = resolveDirection(spec);
   const depth = resolveDepth(spec);
-  const attachment = options.attachment || { x: 0, y: 0, rotation: 0 };
-  const direction = effectiveDirection(spec);
-  const distance = spec.distance;
-  const to = {
-    x: attachment.x || 0,
-    y: attachment.y || 0,
-    rotation: attachment.rotation || 0,
-    scale: depth.scale
-  };
+  const attachment = resolveAttachment(element, container, spec);
 
-  const finalFrame = {
-    transform: transform(to),
-    opacity: depth.opacity,
+  const frame = {
+    transform: transform({
+      x: attachment.x + spec.offsetX,
+      y: attachment.y + spec.offsetY,
+      scale: depth.scale,
+      rotation: attachment.rotation
+    }),
+    opacity: String(depth.opacity),
     filter: `blur(${depth.blur}px) saturate(1)`,
-    clipPath: "inset(0% 0% 0% 0%)"
+    clipPath: "inset(0% 0% 0% 0%)",
+    zIndex: String(depth.z)
   };
 
-  let firstFrame;
+  return {
+    ...frame,
+    ...parseCustomCss(spec.customCss)
+  };
+}
 
-  switch (spec.transition) {
-    case "reveal":
-      firstFrame = {
-        transform: transform({
-          ...to,
-          x: to.x + vector.x * Math.min(distance * 0.18, 48),
-          y: to.y + vector.y * Math.min(distance * 0.18, 48),
-          scale: to.scale * 0.985
-        }),
-        opacity: 0,
-        filter: `blur(${Math.max(depth.blur, 5)}px) saturate(.92)`,
-        clipPath: revealClip(direction)
-      };
-      break;
+export function transitionFrames(element, container, fromSpecInput, toSpecInput) {
+  const fromSpec = normaliseSpec(fromSpecInput);
+  const toSpec = normaliseSpec(toSpecInput);
+  const from = destinationFrame(element, container, fromSpec);
+  const to = destinationFrame(element, container, toSpec);
+  const vector = resolveDirection(toSpec);
+  const direction = resolvedDirectionName(toSpec);
+  const distance = toSpec.distance;
 
-    case "collapse":
-      firstFrame = {
-        transform: collapseTransform(to, direction),
-        transformOrigin: transformOrigin(direction),
-        opacity: 0,
-        filter: `blur(${Math.max(depth.blur, 3)}px) saturate(.95)`,
-        clipPath: revealClip(direction)
-      };
-      finalFrame.transformOrigin = transformOrigin(direction);
-      break;
-
-    case "slide":
-      firstFrame = {
-        transform: transform({
-          ...to,
-          x: to.x + vector.x * distance,
-          y: to.y + vector.y * distance
-        }),
-        opacity: 0,
-        filter: `blur(${depth.blur}px) saturate(.96)`,
-        clipPath: "inset(0% 0% 0% 0%)"
-      };
-      break;
-
-    case "push":
-    default:
-      firstFrame = {
-        transform: transform({
-          ...to,
-          x: to.x + vector.x * distance,
-          y: to.y + vector.y * distance,
-          scale: to.scale * 0.98
-        }),
-        opacity: Math.min(depth.opacity, 0.42),
-        filter: `blur(${Math.max(depth.blur, 2)}px) saturate(.96)`,
-        clipPath: "inset(0% 0% 0% 0%)"
-      };
-      break;
+  if (toSpec.transition === "reveal") {
+    const masked = {
+      ...to,
+      transform: addTranslation(to.transform, vector.x * Math.min(distance * 0.22, 70), vector.y * Math.min(distance * 0.22, 70)),
+      opacity: String(Math.min(Number(to.opacity) || 1, 0.12)),
+      filter: `blur(${Math.max(resolveDepth(toSpec).blur, 7)}px) saturate(.92)`,
+      clipPath: revealClip(direction)
+    };
+    return [from, masked, to];
   }
 
-  return [firstFrame, finalFrame];
+  if (toSpec.transition === "collapse") {
+    const midpoint = {
+      ...to,
+      transform: collapseTransform(to.transform, direction),
+      opacity: String(Math.min(Number(to.opacity) || 1, 0.2)),
+      clipPath: revealClip(direction)
+    };
+    return [from, midpoint, to];
+  }
+
+  if (toSpec.transition === "push") {
+    const approach = {
+      ...to,
+      transform: addTranslation(to.transform, vector.x * Math.min(distance * 0.32, 110), vector.y * Math.min(distance * 0.32, 110)),
+      opacity: String(Math.min(Number(to.opacity) || 1, 0.65))
+    };
+    return [from, approach, to];
+  }
+
+  if (toSpec.transition === "custom") {
+    return [from, to];
+  }
+
+  return [from, to];
 }
 
-export function buildExitFrames(specInput = {}, options = {}) {
-  return [...buildTransitionFrames(specInput, options)].reverse();
+export async function animateBetweenStates(element, container, fromSpec, toSpec, {
+  delay = 0,
+  reducedMotion = prefersReducedMotion()
+} = {}) {
+  const target = destinationFrame(element, container, toSpec);
+  const spec = normaliseSpec(toSpec);
+
+  if (!element) return null;
+
+  if (reducedMotion || typeof element.animate !== "function") {
+    applyFrame(element, target);
+    return null;
+  }
+
+  const frames = transitionFrames(element, container, fromSpec, toSpec);
+  const animation = element.animate(frames, {
+    duration: spec.duration,
+    delay,
+    easing: spec.easing,
+    fill: "forwards"
+  });
+
+  await animation.finished.catch(() => {});
+  animation.cancel();
+  applyFrame(element, target);
+  return animation;
 }
 
-export function buildPushFrames(specInput = {}) {
+export function applyFrame(element, frame) {
+  if (!element || !frame) return;
+  Object.entries(frame).forEach(([property, value]) => {
+    if (value === undefined || value === null) return;
+    element.style[property] = String(value);
+  });
+}
+
+export function clearFrame(element) {
+  if (!element) return;
+  [
+    "transform",
+    "opacity",
+    "filter",
+    "clipPath",
+    "zIndex",
+    "borderRadius",
+    "mixBlendMode",
+    "background",
+    "boxShadow"
+  ].forEach((property) => {
+    element.style[property] = "";
+  });
+}
+
+export function pushCompanionFrames(specInput = {}) {
   const spec = normaliseSpec(specInput);
   const vector = resolveDirection(spec);
-  const amount = Math.min(Math.max(spec.distance * 0.44, 48), 180);
+  const amount = Math.min(Math.max(spec.distance * 0.34, 44), 150);
 
   return [
     { transform: "translate3d(0px, 0px, 0)" },
     {
       transform: `translate3d(${-vector.x * amount}px, ${-vector.y * amount}px, 0)`
-    }
+    },
+    { transform: "translate3d(0px, 0px, 0)" }
   ];
 }
 
-export function attachmentFor(element, container, specInput = {}) {
+export function cssForElement({
+  selector = "[data-stage-object]",
+  stateName = "state",
+  spec: specInput = {},
+  frame = null
+} = {}) {
   const spec = normaliseSpec(specInput);
+  const depth = resolveDepth(spec);
+  const lines = [
+    `${selector}[data-stage-state="${cssEscape(stateName)}"] {`,
+    `  --stage-transition: ${spec.transition};`,
+    `  --stage-attachment: ${spec.attachment};`,
+    `  --stage-coordination: ${spec.coordination};`,
+    `  --stage-depth: ${spec.depth};`,
+    `  --stage-direction: ${spec.direction};`,
+    `  --stage-distance: ${spec.distance}px;`,
+    `  --stage-duration: ${spec.duration}ms;`,
+    `  --stage-stagger: ${spec.stagger}ms;`,
+    `  --stage-offset-x: ${spec.offsetX}px;`,
+    `  --stage-offset-y: ${spec.offsetY}px;`,
+    `  --stage-blur: ${depth.blur}px;`,
+    `  --stage-scale: ${trimNumber(depth.scale)};`,
+    `  --stage-opacity: ${trimNumber(depth.opacity)};`,
+    `  z-index: ${depth.z};`
+  ];
 
-  if (spec.attachment === "float") {
-    return { x: 0, y: -12, rotation: -0.8 };
+  if (frame) {
+    lines.push(
+      `  transform: ${frame.transform};`,
+      `  filter: ${frame.filter};`,
+      `  opacity: ${frame.opacity};`
+    );
+  } else {
+    lines.push(
+      "  transform: translate3d(var(--stage-offset-x), var(--stage-offset-y), 0) scale(var(--stage-scale));",
+      "  filter: blur(var(--stage-blur));",
+      "  opacity: var(--stage-opacity);"
+    );
   }
 
-  if (spec.attachment === "pin" || spec.attachment === "free" || !element || !container) {
-    return { x: 0, y: 0, rotation: 0 };
+  if (spec.customCss.trim()) {
+    lines.push("  /* custom CSS */");
+    spec.customCss
+      .split(";")
+      .map((line) => line.trim())
+      .filter(Boolean)
+      .forEach((line) => lines.push(`  ${line};`));
   }
 
-  if (spec.attachment !== "dock") {
-    return { x: 0, y: 0, rotation: 0 };
-  }
-
-  const rect = element.getBoundingClientRect();
-  const bounds = container.getBoundingClientRect();
-  const direction = effectiveDirection(spec);
-  const gutter = 20;
-
-  if (direction === "right") {
-    return {
-      x: bounds.right - gutter - rect.right,
-      y: bounds.top + (bounds.height - rect.height) / 2 - rect.top,
-      rotation: 0
-    };
-  }
-
-  if (direction === "top") {
-    return {
-      x: bounds.left + (bounds.width - rect.width) / 2 - rect.left,
-      y: bounds.top + gutter - rect.top,
-      rotation: 0
-    };
-  }
-
-  if (direction === "bottom") {
-    return {
-      x: bounds.left + (bounds.width - rect.width) / 2 - rect.left,
-      y: bounds.bottom - gutter - rect.bottom,
-      rotation: 0
-    };
-  }
-
-  return {
-    x: bounds.left + gutter - rect.left,
-    y: bounds.top + (bounds.height - rect.height) / 2 - rect.top,
-    rotation: 0
-  };
+  lines.push("}");
+  return lines.join("\n");
 }
 
-export async function playMotion({
-  targets,
-  swapTarget = null,
-  followTargets = [],
-  pushTargets = [],
-  container = null,
+export function cssForParent({
+  stageSelector = "[data-stage]",
+  objectSelector = "[data-stage-object]",
   spec: specInput = {}
 } = {}) {
   const spec = normaliseSpec(specInput);
-  const elements = toElements(targets);
+  const lines = [
+    `${stageSelector} {`,
+    "  position: relative;",
+    "  overflow: hidden;",
+    "  isolation: isolate;",
+    "}"
+  ];
 
-  if (!elements.length) return [];
-
-  const reduced = prefersReducedMotion();
-  const animations = [];
-
-  if (spec.coordination === "swap" && swapTarget) {
-    const primary = elements[0];
-    const primaryAttachment = attachmentFor(primary, container, spec);
-    const secondaryAttachment = attachmentFor(swapTarget, container, {
-      ...spec,
-      direction: oppositeDirection(effectiveDirection(spec))
-    });
-
-    setPresentationState(swapTarget, true);
-
-    if (reduced) {
-      applyFinalFrame(swapTarget, buildTransitionFrames(spec, { attachment: secondaryAttachment }).at(-1));
-      primary.style.opacity = "0";
-      return [];
-    }
-
-    animations.push(
-      animate(primary, buildExitFrames(spec, { attachment: primaryAttachment }), spec, 0),
-      animate(
-        swapTarget,
-        buildTransitionFrames(
-          { ...spec, direction: oppositeDirection(effectiveDirection(spec)) },
-          { attachment: secondaryAttachment }
-        ),
-        spec,
-        Math.round(spec.stagger * 0.5)
-      )
+  if (spec.attachment === "dock") {
+    const direction = resolvedDirectionName(spec);
+    lines.push(
+      "",
+      `/* Dock requires a positioned stage. Edge: ${direction}. */`,
+      `${stageSelector} ${objectSelector} {`,
+      "  position: absolute;",
+      "}"
     );
-
-    await settle(animations);
-    return animations;
   }
-
-  const motionTargets = spec.coordination === "follow"
-    ? [elements[0], ...toElements(followTargets)]
-    : elements;
-
-  const limitedTargets = spec.coordination === "none"
-    ? motionTargets.slice(0, 1)
-    : motionTargets;
-
-  limitedTargets.forEach((element, index) => {
-    setPresentationState(element, true);
-    const attachment = attachmentFor(element, container, spec);
-    const delay = (
-      spec.coordination === "stagger" || spec.coordination === "follow"
-    ) ? index * spec.stagger : 0;
-
-    if (reduced) {
-      applyFinalFrame(element, buildTransitionFrames(spec, { attachment }).at(-1));
-      return;
-    }
-
-    animations.push(
-      animate(element, buildTransitionFrames(spec, { attachment }), spec, delay)
-    );
-  });
 
   if (spec.transition === "push") {
-    toElements(pushTargets).forEach((element) => {
-      if (reduced) {
-        applyFinalFrame(element, buildPushFrames(spec).at(-1));
-        return;
-      }
-      animations.push(animate(element, buildPushFrames(spec), {
-        ...spec,
-        duration: Math.max(220, spec.duration * 0.86)
-      }, 0));
-    });
+    const vector = resolveDirection(spec);
+    const amount = Math.min(Math.max(spec.distance * 0.34, 44), 150);
+    lines.push(
+      "",
+      "/* Push temporarily shifts the stage content opposite the arriving object. */",
+      `${stageSelector}[data-transitioning] > [data-stage-content] {`,
+      `  --stage-push-x: ${trimNumber(-vector.x * amount)}px;`,
+      `  --stage-push-y: ${trimNumber(-vector.y * amount)}px;`,
+      "  transform: translate3d(var(--stage-push-x), var(--stage-push-y), 0);",
+      "}"
+    );
   }
 
-  await settle(animations);
-  return animations;
-}
+  if (spec.coordination === "stagger") {
+    lines.push(
+      "",
+      "/* Children opt into an index so one state can stagger a collection. */",
+      `${objectSelector} > * {`,
+      `  transition-delay: calc(var(--stage-index, 0) * ${spec.stagger}ms);`,
+      "}"
+    );
+  }
 
-export function clearMotion(elements) {
-  toElements(elements).forEach((element) => {
-    element.getAnimations?.().forEach((animation) => animation.cancel());
-    element.removeAttribute?.("style");
-    element.removeAttribute?.("data-motion-active");
-  });
+  if (spec.coordination === "follow") {
+    lines.push(
+      "",
+      "/* Followers reuse the leader's destination with a delayed hand-off. */",
+      `[data-stage-follow] {`,
+      `  transition-delay: calc(var(--stage-follow-index, 1) * ${spec.stagger}ms);`,
+      "}"
+    );
+  }
+
+  if (spec.coordination === "swap") {
+    lines.push(
+      "",
+      "/* Swap needs both participants to share a containing block. */",
+      `[data-stage-swap-group] {`,
+      "  position: relative;",
+      "}"
+    );
+  }
+
+  return lines.join("\n");
 }
 
 export function motionMarkup(specInput = {}) {
   const spec = normaliseSpec(specInput);
   return [
-    `data-stage-role="${spec.role}"`,
     `data-stage-transition="${spec.transition}"`,
     `data-stage-attachment="${spec.attachment}"`,
     `data-stage-coordination="${spec.coordination}"`,
@@ -348,51 +360,72 @@ export function prefersReducedMotion(win = globalThis.window) {
   return Boolean(win?.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches);
 }
 
-function animate(element, frames, specInput, delay = 0) {
-  const spec = normaliseSpec(specInput);
-  return element.animate(frames, {
-    duration: spec.duration,
-    delay,
-    easing: spec.easing,
-    fill: "forwards"
-  });
-}
+function resolveAttachment(element, container, spec) {
+  const direction = resolvedDirectionName(spec);
 
-function setPresentationState(element, active) {
-  if (!element) return;
-  if (active) element.dataset.motionActive = "true";
-  else element.removeAttribute("data-motion-active");
-}
-
-function applyFinalFrame(element, frame = {}) {
-  Object.assign(element.style, frame);
-}
-
-function settle(animations) {
-  return Promise.all(
-    animations.map((animation) => animation.finished?.catch(() => undefined))
-  );
-}
-
-function effectiveDirection(spec) {
-  if (spec.direction === "auto") {
-    return AUTO_DIRECTIONS[spec.role] || "left";
+  if (!element || !container || spec.attachment === "free" || spec.attachment === "pin" || spec.attachment === "custom") {
+    return { x: 0, y: 0, rotation: 0 };
   }
-  if (spec.direction === "custom") {
-    const vector = resolveDirection(spec);
-    if (Math.abs(vector.x) >= Math.abs(vector.y)) return vector.x >= 0 ? "right" : "left";
-    return vector.y >= 0 ? "bottom" : "top";
-  }
-  return DIRECTIONS[spec.direction] ? spec.direction : "left";
-}
 
-function oppositeDirection(direction) {
+  if (spec.attachment === "float") {
+    return { x: 0, y: -18, rotation: -0.6 };
+  }
+
+  if (spec.attachment !== "dock") {
+    return { x: 0, y: 0, rotation: 0 };
+  }
+
+  const gutter = 22;
+  const elementLeft = element.offsetLeft;
+  const elementTop = element.offsetTop;
+  const width = element.offsetWidth;
+  const height = element.offsetHeight;
+  const stageWidth = container.clientWidth;
+  const stageHeight = container.clientHeight;
+
+  if (direction === "right") {
+    return {
+      x: stageWidth - gutter - width - elementLeft,
+      y: stageHeight / 2 - height / 2 - elementTop,
+      rotation: 0
+    };
+  }
+
+  if (direction === "top") {
+    return {
+      x: stageWidth / 2 - width / 2 - elementLeft,
+      y: gutter - elementTop,
+      rotation: 0
+    };
+  }
+
+  if (direction === "bottom") {
+    return {
+      x: stageWidth / 2 - width / 2 - elementLeft,
+      y: stageHeight - gutter - height - elementTop,
+      rotation: 0
+    };
+  }
+
   return {
-    top: "bottom",
-    right: "left",
-    bottom: "top",
-    left: "right"
-  }[direction] || "right";
+    x: gutter - elementLeft,
+    y: stageHeight / 2 - height / 2 - elementTop,
+    rotation: 0
+  };
+}
+
+function parseCustomCss(cssText) {
+  if (!cssText?.trim() || typeof document === "undefined") return {};
+  const style = document.createElement("div").style;
+  style.cssText = cssText;
+  const result = {};
+
+  for (const property of style) {
+    const camel = property.replace(/-([a-z])/g, (_, letter) => letter.toUpperCase());
+    result[camel] = style.getPropertyValue(property).trim();
+  }
+
+  return result;
 }
 
 function revealClip(direction) {
@@ -404,49 +437,17 @@ function revealClip(direction) {
   }[direction] || "inset(0% 100% 0% 0%)";
 }
 
-function transformOrigin(direction) {
-  return {
-    top: "top center",
-    right: "center right",
-    bottom: "bottom center",
-    left: "center left"
-  }[direction] || "center";
+function collapseTransform(transformValue, direction) {
+  const horizontal = direction === "left" || direction === "right";
+  return transformValue + (horizontal ? " scaleX(.2)" : " scaleY(.2)");
 }
 
-function collapseTransform(to, direction) {
-  const horizontal = direction === "left" || direction === "right";
-  return [
-    `translate3d(${to.x}px, ${to.y}px, 0)`,
-    `rotate(${to.rotation || 0}deg)`,
-    horizontal
-      ? `scale(${to.scale * 0.9}, ${to.scale})`
-      : `scale(${to.scale}, ${to.scale * 0.72})`
-  ].join(" ");
+function addTranslation(transformValue, x, y) {
+  return `translate3d(${trimNumber(x)}px, ${trimNumber(y)}px, 0) ${transformValue}`;
 }
 
 function transform({ x = 0, y = 0, scale = 1, rotation = 0 } = {}) {
-  return `translate3d(${x}px, ${y}px, 0) rotate(${rotation}deg) scale(${scale})`;
-}
-
-function normaliseVector(vector) {
-  const x = finiteNumber(vector?.x, 0);
-  const y = finiteNumber(vector?.y, 0);
-  const length = Math.hypot(x, y);
-  if (!length) return { x: -1, y: 0 };
-  return { x: x / length, y: y / length };
-}
-
-function toElements(value) {
-  if (!value) return [];
-  if (Array.isArray(value)) return value.filter(Boolean);
-  if (
-    typeof value !== "string" &&
-    typeof value[Symbol.iterator] === "function" &&
-    !value.animate
-  ) {
-    return [...value].filter(Boolean);
-  }
-  return [value].filter(Boolean);
+  return `translate3d(${trimNumber(x)}px, ${trimNumber(y)}px, 0) rotate(${trimNumber(rotation)}deg) scale(${trimNumber(scale)})`;
 }
 
 function finiteNumber(value, fallback) {
@@ -456,4 +457,14 @@ function finiteNumber(value, fallback) {
 
 function clamp(value, min, max) {
   return Math.min(max, Math.max(min, value));
+}
+
+function trimNumber(value) {
+  const number = Number(value);
+  if (!Number.isFinite(number)) return String(value);
+  return String(Number(number.toFixed(3)));
+}
+
+function cssEscape(value) {
+  return String(value).replace(/["\\]/g, "\\$&");
 }
