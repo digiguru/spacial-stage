@@ -42,6 +42,11 @@ export const DEFAULT_SPEC = Object.freeze({
   scale: 1,
   opacity: 1,
   zIndex: 10,
+  rotateZ: 0,
+  rotateX: 0,
+  rotateY: 0,
+  translateZ: 0,
+  perspective: 1000,
   easing: "cubic-bezier(.2,.82,.24,1)",
   customVector: Object.freeze({ x: -1, y: 0 }),
   customCss: ""
@@ -83,6 +88,11 @@ export function normaliseSpec(input = {}) {
     scale: finiteNumber(input.scale, DEFAULT_SPEC.scale),
     opacity: finiteNumber(input.opacity, DEFAULT_SPEC.opacity),
     zIndex: finiteNumber(input.zIndex, legacyDepthZIndex(input.depth)),
+    rotateZ: finiteNumber(input.rotateZ, finiteNumber(input.rotation, DEFAULT_SPEC.rotateZ)),
+    rotateX: finiteNumber(input.rotateX, DEFAULT_SPEC.rotateX),
+    rotateY: finiteNumber(input.rotateY, DEFAULT_SPEC.rotateY),
+    translateZ: finiteNumber(input.translateZ, DEFAULT_SPEC.translateZ),
+    perspective: Math.max(1, finiteNumber(input.perspective, DEFAULT_SPEC.perspective)),
     easing: input.easing || DEFAULT_SPEC.easing,
     customCss: input.customCss || "",
     customVector: {
@@ -265,12 +275,18 @@ export function destinationFrame(element, container, specInput = {}) {
     transform: transform({
       x: position.x,
       y: position.y,
+      z: spec.translateZ,
       scale: Math.max(0.05, spec.scale),
-      rotation: position.rotation
+      rotateZ: spec.rotateZ + position.rotation,
+      rotateX: spec.rotateX,
+      rotateY: spec.rotateY,
+      perspective: spec.perspective
     }),
     opacity: String(depth.opacity),
     filter: `blur(${depth.blur}px) saturate(${depth.saturation})`,
     clipPath: "inset(0% 0% 0% 0%)",
+    transformStyle: "preserve-3d",
+    backfaceVisibility: "visible",
     zIndex: String(spec.zIndex)
   };
 
@@ -465,6 +481,11 @@ export function cssForElement({
     `  --stage-scale: ${trimNumber(spec.scale)};`,
     `  --stage-opacity: ${trimNumber(depth.opacity)};`,
     `  --stage-z-index: ${trimNumber(spec.zIndex)};`,
+    `  --stage-rotate-z: ${trimNumber(spec.rotateZ)}deg;`,
+    `  --stage-rotate-x: ${trimNumber(spec.rotateX)}deg;`,
+    `  --stage-rotate-y: ${trimNumber(spec.rotateY)}deg;`,
+    `  --stage-translate-z: ${trimNumber(spec.translateZ)}px;`,
+    `  --stage-perspective: ${trimNumber(spec.perspective)}px;`,
     `  z-index: var(--stage-z-index);`
   ];
 
@@ -474,7 +495,9 @@ export function cssForElement({
       `  height: ${frame.height};`,
       `  transform: ${frame.transform};`,
       `  filter: ${frame.filter};`,
-      `  opacity: ${frame.opacity};`
+      `  opacity: ${frame.opacity};`,
+      `  transform-style: ${frame.transformStyle};`,
+      `  backface-visibility: ${frame.backfaceVisibility};`
     );
   } else {
     lines.push(
@@ -601,6 +624,11 @@ export function motionMarkup(specInput = {}) {
     `data-stage-coordination="${spec.coordination}"`,
     `data-stage-depth="${spec.depth}"`,
     `data-stage-z-index="${spec.zIndex}"`,
+    `data-stage-rotate-z="${spec.rotateZ}"`,
+    `data-stage-rotate-x="${spec.rotateX}"`,
+    `data-stage-rotate-y="${spec.rotateY}"`,
+    `data-stage-translate-z="${spec.translateZ}"`,
+    `data-stage-perspective="${spec.perspective}"`,
     `data-stage-direction="${spec.direction}"`,
     `data-stage-anchor-x="${spec.horizontalAnchor}"`,
     `data-stage-anchor-y="${spec.verticalAnchor}"`,
@@ -758,8 +786,24 @@ function addTranslation(transformValue, x, y) {
   return `translate3d(${trimNumber(x)}px, ${trimNumber(y)}px, 0) ${transformValue}`;
 }
 
-function transform({ x = 0, y = 0, scale = 1, rotation = 0 } = {}) {
-  return `translate3d(${trimNumber(x)}px, ${trimNumber(y)}px, 0) rotate(${trimNumber(rotation)}deg) scale(${trimNumber(scale)})`;
+function transform({
+  x = 0,
+  y = 0,
+  z = 0,
+  scale = 1,
+  rotateZ = 0,
+  rotateX = 0,
+  rotateY = 0,
+  perspective = 1000
+} = {}) {
+  return [
+    `perspective(${trimNumber(perspective)}px)`,
+    `translate3d(${trimNumber(x)}px, ${trimNumber(y)}px, ${trimNumber(z)}px)`,
+    `rotateX(${trimNumber(rotateX)}deg)`,
+    `rotateY(${trimNumber(rotateY)}deg)`,
+    `rotateZ(${trimNumber(rotateZ)}deg)`,
+    `scale(${trimNumber(scale)})`
+  ].join(" ");
 }
 
 function normaliseVector(vector) {
