@@ -1,9 +1,15 @@
 {
   "name": "@digiguru/spacial-stage",
   "version": "0.1.0",
-  "private": true,
   "type": "module",
   "description": "A framework-neutral motion grammar and playground for spatial interfaces.",
+  "exports": {
+    ".": "./src/spacial-stage.js"
+  },
+  "files": [
+    "src/spacial-stage.js"
+  ],
+  "sideEffects": false,
   "scripts": {
     "dev": "vite",
     "build": "vite build",
