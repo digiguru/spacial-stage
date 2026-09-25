@@ -29,6 +29,11 @@ test("normalises named-state specs including anchored position and custom vector
     sizeHeight: "31.5",
     duration: "900",
     scale: "1.2",
+    rotateZ: "-12",
+    rotateX: "18",
+    rotateY: "-24",
+    translateZ: "140",
+    perspective: "850",
     customVector: { x: "3", y: "4" }
   });
 
@@ -42,6 +47,11 @@ test("normalises named-state specs including anchored position and custom vector
   assert.equal(spec.sizeHeight, 31.5);
   assert.equal(spec.duration, 900);
   assert.equal(spec.scale, 1.2);
+  assert.equal(spec.rotateZ, -12);
+  assert.equal(spec.rotateX, 18);
+  assert.equal(spec.rotateY, -24);
+  assert.equal(spec.translateZ, 140);
+  assert.equal(spec.perspective, 850);
   assert.deepEqual(spec.customVector, { x: 3, y: 4 });
 });
 
@@ -362,6 +372,11 @@ test("element CSS exposes every authored state axis including position", () => {
       coordination: "follow",
       depth: "blur",
       zIndex: 7,
+      rotateZ: 12,
+      rotateX: -8,
+      rotateY: 16,
+      translateZ: 90,
+      perspective: 750,
       direction: "left",
       horizontalAnchor: "left",
       verticalAnchor: "center",
@@ -385,6 +400,11 @@ test("element CSS exposes every authored state axis including position", () => {
   assert.match(css, /--stage-depth: blur/);
   assert.match(css, /--stage-softening: 0.82/);
   assert.match(css, /--stage-z-index: 7/);
+  assert.match(css, /--stage-rotate-z: 12deg/);
+  assert.match(css, /--stage-rotate-x: -8deg/);
+  assert.match(css, /--stage-rotate-y: 16deg/);
+  assert.match(css, /--stage-translate-z: 90px/);
+  assert.match(css, /--stage-perspective: 750px/);
   assert.match(css, /z-index: var\(--stage-z-index\)/);
   assert.match(css, /--stage-direction: left/);
   assert.match(css, /--stage-anchor-x: left/);
@@ -395,6 +415,106 @@ test("element CSS exposes every authored state axis including position", () => {
   assert.match(css, /--stage-size-mode: percent/);
   assert.match(css, /--stage-size-width: 44%/);
   assert.match(css, /--stage-size-height: 36%/);
+});
+
+test("rotation and local 3d transforms are destination-state properties", () => {
+  const container = { clientWidth: 1000, clientHeight: 600 };
+  const element = {
+    offsetWidth: 200,
+    offsetHeight: 100,
+    offsetLeft: 0,
+    offsetTop: 0,
+    dataset: {
+      stageNaturalWidth: "200",
+      stageNaturalHeight: "100"
+    }
+  };
+
+  const [frame] = transitionFrames(
+    element,
+    container,
+    {},
+    {
+      animations: [],
+      rotateZ: 15,
+      rotateX: -20,
+      rotateY: 35,
+      translateZ: 120,
+      perspective: 700,
+      scale: 1.1
+    }
+  );
+
+  assert.match(frame.transform, /perspective\(700px\)/);
+  assert.match(frame.transform, /translate3d\([^,]+, [^,]+, 120px\)/);
+  assert.match(frame.transform, /rotateX\(-20deg\)/);
+  assert.match(frame.transform, /rotateY\(35deg\)/);
+  assert.match(frame.transform, /rotateZ\(15deg\)/);
+  assert.match(frame.transform, /scale\(1\.1\)/);
+  assert.equal(frame.transformStyle, "preserve-3d");
+});
+
+test("Slide interpolates rotation and 3d transform with the rest of geometry", () => {
+  const container = { clientWidth: 1000, clientHeight: 600 };
+  const element = {
+    offsetWidth: 200,
+    offsetHeight: 100,
+    offsetLeft: 0,
+    offsetTop: 0,
+    dataset: {
+      stageNaturalWidth: "200",
+      stageNaturalHeight: "100"
+    }
+  };
+
+  const [start, end] = transitionFrames(
+    element,
+    container,
+    {
+      rotateZ: -30,
+      rotateX: 10,
+      rotateY: -15,
+      translateZ: -80,
+      perspective: 900
+    },
+    {
+      animations: ["slide"],
+      rotateZ: 45,
+      rotateX: -25,
+      rotateY: 30,
+      translateZ: 160,
+      perspective: 650
+    }
+  );
+
+  assert.match(start.transform, /rotateZ\(-30deg\)/);
+  assert.match(start.transform, /translate3d\([^,]+, [^,]+, -80px\)/);
+  assert.match(end.transform, /rotateZ\(45deg\)/);
+  assert.match(end.transform, /translate3d\([^,]+, [^,]+, 160px\)/);
+});
+
+test("without Slide, 3d destination snaps before other effects animate", () => {
+  const container = { clientWidth: 1000, clientHeight: 600 };
+  const element = {
+    offsetWidth: 200,
+    offsetHeight: 100,
+    offsetLeft: 0,
+    offsetTop: 0,
+    dataset: {
+      stageNaturalWidth: "200",
+      stageNaturalHeight: "100"
+    }
+  };
+
+  const [start, end] = transitionFrames(
+    element,
+    container,
+    { rotateY: -45, translateZ: -100 },
+    { animations: ["fade"], rotateY: 35, translateZ: 180 }
+  );
+
+  assert.equal(start.transform, end.transform);
+  assert.equal(start.opacity, "0");
 });
 
 test("z-index and scale are independent destination settings", () => {
