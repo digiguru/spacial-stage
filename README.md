@@ -2,56 +2,120 @@
 
 A small framework-neutral motion grammar for spatial interfaces.
 
-**Live playground:** https://spacial-stage-ochre.vercel.app/
+**Live playground:** https://spacial-stage.vercel.app/
 
-This repository is intentionally a terminology lab as well as a library. The demo lets you combine independent motion axes, play the result, then override the defaults.
+The project is deliberately both **library** and **terminology lab**. The playground lets you author named UI states, select individual objects, configure how each object behaves in each state, switch between states, and inspect the concrete CSS implied by the semantic choices.
 
 > The repository name is `spacial-stage` as requested. The interaction pattern itself is described in the UI as a “spatial stage”.
+
+## State model
+
+Spacial Stage does not model an object as merely “in” or “out”.
+
+Instead, an application defines named states such as:
+
+```
+Home
+Room
+Cloud
+```
+
+Each state stores a complete destination configuration for every stage object.
+
+For example, the same shared SVG can be:
+
+- background + offset on **Home**;
+- focused + centred in **Room**;
+- background + left-weighted in **Cloud**.
+
+The destination belongs to the state. **Transition** describes how the object itself arrives there. **Layout effect** describes what that arrival does to neighbouring layout.
+
+## Playground objects
+
+The demo intentionally uses four different kinds of UI object:
+
+- a shared SVG visual;
+- an edge panel;
+- a title + paragraph content block;
+- a collection of floating cards.
+
+Each can be clicked directly on the stage or selected from the object toolbar and configured independently for the active state.
+
+## Taxonomy under test
+
+| Axis | Current terms | Question it answers |
+| --- | --- | --- |
+| Object role | Shared, Panel, Content, Collection | What kind of thing is this? |
+| Transition | Slide, Reveal, Fade, Collapse, Custom | How does the object itself arrive? |
+| Layout effect | Overlay, Push, Replace, Reflow, Custom | What happens to neighbouring layout? |
+| Attachment | Free, Float, Dock, Pin, Custom | Where does the destination belong relative to layout? |
+| Coordination | None, Swap, Stagger, Follow, Custom | How does its timing relate to other moving objects? |
+| Depth | Background, Focus, Foreground, Custom | Where does it sit perceptually? |
+| Direction / edge | Auto, Top, Right, Bottom, Left, Custom | Which vector or edge participates? |
+
+The split between **Transition** and **Layout effect** is intentional:
+
+```
+Panel + Reveal + Push + Dock + Foreground + Left
+Shared + Slide + Overlay + Free + Background + Right
+```
+
+These names are not considered final. The playground exists specifically to expose where the taxonomy feels awkward.
+
+## Custom is always available
+
+Every object/state also exposes numeric and raw-CSS escape hatches:
+
+- X/Y destination offsets;
+- custom X/Y direction vector;
+- travel distance;
+- duration;
+- stagger interval;
+- blur;
+- scale;
+- opacity;
+- easing;
+- custom CSS declarations.
+
+The semantic API should make common motion easy without making uncommon motion impossible.
+
+## Generated CSS
+
+For the selected object and state the playground shows two views.
+
+### Element CSS
+
+This contains:
+
+- every semantic parameter as CSS custom properties;
+- the destination transform;
+- depth-derived blur, opacity and scale;
+- z-index;
+- custom CSS appended after generated declarations.
+
+### Parent / group CSS
+
+This contains only the rules the selected behaviour requires from its context, including:
+
+- positioned containing blocks for Dock;
+- container displacement for Push;
+- parent fade/replacement for Replace;
+- parent scaling/reflow for Reflow;
+- stagger/follow timing;
+- swap-group requirements.
+
+The purpose is to make every bit of vocabulary traceable to actual browser behaviour.
 
 ## Goals
 
 - Describe motion semantically instead of scattering animation code through applications.
 - Keep routing/application state separate from presentation.
-- Compose shared objects, panels, layout displacement, depth, docking and coordinated motion.
+- Treat named states as first-class concepts.
+- Make shared-object continuity reusable across TeamTools-style applications.
+- Keep Transition separate from Layout effect.
 - Make reduced motion a first-class outcome.
 - Always leave a Custom escape hatch.
 - Prove the vocabulary interactively before freezing the public API.
-
-## Taxonomy under test
-
-| Axis | Current terms | Question |
-| --- | --- | --- |
-| Object role | Shared, Panel, Content, Collection, Custom | What kind of thing is moving? |
-| Transition | Slide, Reveal, Fade, Collapse, Custom | How does the object itself appear/move? |
-| Layout effect | Overlay, Push, Replace, Reflow, Custom | What happens to neighbouring layout? |
-| Attachment | Free, Float, Dock, Pin, Custom | How is it attached to the stage/layout? |
-| Coordination | None, Swap, Stagger, Follow, Custom | How does it relate to other moving objects? |
-| Depth | Background, Focus, Foreground, Custom | Where does it sit perceptually? |
-| Direction | Auto, Top, Right, Bottom, Left, Custom | Which edge/vector participates? |
-
-The important split is that **Push is a layout effect** and **Focus is depth**. They can therefore compose with transitions:
-
-```
-Panel + Reveal + Push + Dock + None + Foreground + Left
-Shared + Slide + Overlay + Free + Follow + Focus + Right
-```
-
-The playground is deliberately opinionated but not final. If a term feels wrong while using it, that is useful evidence.
-
-## Custom is always available
-
-Every semantic axis includes Custom. Fine-grained overrides are always available for:
-
-- distance
-- duration
-- stagger interval
-- blur
-- scale
-- opacity
-- easing
-- arbitrary X/Y direction vector
-
-Presets should make common motion easy; they must not make uncommon motion impossible.
 
 ## Run locally
 
@@ -62,25 +126,14 @@ npm run dev
 
 ## Library
 
-The framework-neutral primitives live in `src/spacial-stage.js`. The demo imports the same module consumers would use.
+The framework-neutral primitives live in `src/spacial-stage.js` and are exported from the package root.
 
 ```js
-import { playMotion } from "@digiguru/spacial-stage";
-
-await playMotion({
-  targets: panel,
-  layoutTargets: mainStage,
-  container: stage,
-  spec: {
-    role: "panel",
-    transition: "reveal",
-    layout: "push",
-    attachment: "dock",
-    coordination: "none",
-    depth: "foreground",
-    direction: "left"
-  }
-});
+import {
+  animateBetweenStates,
+  cssForElement,
+  cssForParent
+} from "@digiguru/spacial-stage";
 ```
 
 The package metadata is ready for consumption, but no npm publication decision has been made yet.
