@@ -67,11 +67,11 @@
 
             <fieldset class="control-group">
               <legend>Transition</legend>
-              <p class="control-help">What happens to its presence or layout space?</p>
+              <p class="control-help">How does the object itself appear or move?</p>
               <div class="segmented" data-control="transition">
-                <label><input type="radio" name="transition" value="push" checked /><span>Push</span></label>
+                <label><input type="radio" name="transition" value="slide" checked /><span>Slide</span></label>
                 <label><input type="radio" name="transition" value="reveal" /><span>Reveal</span></label>
-                <label><input type="radio" name="transition" value="slide" /><span>Slide</span></label>
+                <label><input type="radio" name="transition" value="fade" /><span>Fade</span></label>
                 <label><input type="radio" name="transition" value="collapse" /><span>Collapse</span></label>
                 <label><input type="radio" name="transition" value="custom" /><span>Custom</span></label>
               </div>
@@ -80,6 +80,25 @@
                 data-custom-for="transition"
                 type="text"
                 placeholder="Your transition term"
+                hidden
+              />
+            </fieldset>
+
+            <fieldset class="control-group">
+              <legend>Layout effect</legend>
+              <p class="control-help">What happens to neighbouring layout?</p>
+              <div class="segmented" data-control="layout">
+                <label><input type="radio" name="layout" value="overlay" checked /><span>Overlay</span></label>
+                <label><input type="radio" name="layout" value="push" /><span>Push</span></label>
+                <label><input type="radio" name="layout" value="replace" /><span>Replace</span></label>
+                <label><input type="radio" name="layout" value="reflow" /><span>Reflow</span></label>
+                <label><input type="radio" name="layout" value="custom" /><span>Custom</span></label>
+              </div>
+              <input
+                class="custom-term"
+                data-custom-for="layout"
+                type="text"
+                placeholder="Your layout-effect term"
                 hidden
               />
             </fieldset>
@@ -291,7 +310,7 @@
             <div class="spec-heading">
               <div>
                 <p class="eyebrow">Current phrase</p>
-                <h2 id="motionPhrase">Shared · Push · Free · Focus · Auto</h2>
+                <h2 id="motionPhrase">Shared · Slide · Overlay · Free · None · Focus · Auto</h2>
               </div>
               <span id="statusBadge" class="status-badge">Ready</span>
             </div>
@@ -312,10 +331,17 @@
             <p class="eyebrow">Terminology under test</p>
             <div class="term-cards">
               <article>
+                <strong>Push moved into “Layout effect”</strong>
+                <p>
+                  A panel can slide or reveal while simultaneously pushing, replacing or reflowing
+                  neighbouring content.
+                </p>
+              </article>
+              <article>
                 <strong>Focus moved out of “Transition”</strong>
                 <p>
-                  Push, reveal and collapse describe what changes. Focus describes perceived depth.
-                  The playground keeps them separate so we can see if that feels natural.
+                  Focus describes perceived depth, not how something travels. It can now combine with
+                  slide, reveal, fade or collapse.
                 </p>
               </article>
               <article>
