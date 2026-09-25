@@ -29,6 +29,7 @@ const stageStateLabel = document.querySelector("#stageStateLabel");
 const selectedObjectName = document.querySelector("#selectedObjectName");
 const selectedRole = document.querySelector("#selectedRole");
 const selectedStateName = document.querySelector("#selectedStateName");
+const stateNameInput = document.querySelector("#stateNameInput");
 const cssTitle = document.querySelector("#cssTitle");
 const elementCss = document.querySelector("#elementCss");
 const parentCss = document.querySelector("#parentCss");
@@ -70,11 +71,10 @@ for (const object of Object.values(OBJECTS)) {
 
 const base = (role, overrides = {}) => normaliseSpec({
   role,
-  transition: "slide",
   layout: "overlay",
   attachment: "free",
   coordination: "none",
-  depth: "focus",
+  depth: "base",
   direction: "auto",
   horizontalAnchor: "center",
   verticalAnchor: "center",
@@ -99,7 +99,7 @@ const DEFAULT_STATES = [
     name: "Home",
     objects: {
       svg: base("shared", {
-        transition: "slide",
+        animations: ["slide"],
         layout: "overlay",
         depth: "background",
         direction: "right",
@@ -113,7 +113,7 @@ const DEFAULT_STATES = [
         scale: 1.08
       }),
       panel: base("panel", {
-        transition: "reveal",
+        animations: ["reveal", "fade"],
         layout: "overlay",
         attachment: "free",
         depth: "background",
@@ -127,9 +127,9 @@ const DEFAULT_STATES = [
         duration: 600
       }),
       copy: base("content", {
-        transition: "reveal",
+        animations: ["reveal"],
         layout: "overlay",
-        depth: "focus",
+        depth: "base",
         direction: "left",
         horizontalAnchor: "left",
         verticalAnchor: "center",
@@ -140,7 +140,7 @@ const DEFAULT_STATES = [
         duration: 620
       }),
       cards: base("collection", {
-        transition: "reveal",
+        animations: ["reveal"],
         layout: "overlay",
         attachment: "float",
         coordination: "stagger",
@@ -164,9 +164,9 @@ const DEFAULT_STATES = [
     name: "Room",
     objects: {
       svg: base("shared", {
-        transition: "slide",
+        animations: ["slide", "focus"],
         layout: "overlay",
-        depth: "focus",
+        depth: "base",
         direction: "left",
         horizontalAnchor: "center",
         verticalAnchor: "center",
@@ -178,7 +178,7 @@ const DEFAULT_STATES = [
         scale: 0.9
       }),
       panel: base("panel", {
-        transition: "reveal",
+        animations: ["slide", "fade"],
         layout: "push",
         attachment: "dock",
         depth: "foreground",
@@ -193,7 +193,7 @@ const DEFAULT_STATES = [
         scale: 0.98
       }),
       copy: base("content", {
-        transition: "fade",
+        animations: ["fade"],
         layout: "overlay",
         depth: "background",
         direction: "top",
@@ -208,7 +208,7 @@ const DEFAULT_STATES = [
         scale: 0.88
       }),
       cards: base("collection", {
-        transition: "reveal",
+        animations: ["reveal"],
         layout: "overlay",
         attachment: "float",
         coordination: "stagger",
@@ -231,7 +231,7 @@ const DEFAULT_STATES = [
     name: "Cloud",
     objects: {
       svg: base("shared", {
-        transition: "slide",
+        animations: ["slide"],
         layout: "overlay",
         depth: "background",
         direction: "left",
@@ -245,7 +245,7 @@ const DEFAULT_STATES = [
         scale: 1.18
       }),
       panel: base("panel", {
-        transition: "slide",
+        animations: ["slide"],
         layout: "push",
         attachment: "dock",
         depth: "foreground",
@@ -259,9 +259,9 @@ const DEFAULT_STATES = [
         duration: 720
       }),
       copy: base("content", {
-        transition: "reveal",
+        animations: ["reveal"],
         layout: "overlay",
-        depth: "focus",
+        depth: "base",
         direction: "top",
         horizontalAnchor: "right",
         verticalAnchor: "top",
@@ -273,7 +273,7 @@ const DEFAULT_STATES = [
         scale: 0.92
       }),
       cards: base("collection", {
-        transition: "reveal",
+        animations: ["reveal"],
         layout: "overlay",
         attachment: "float",
         coordination: "follow",
@@ -422,6 +422,7 @@ function syncSelection() {
   selectedRole.textContent = titleCase(object.role);
   selectedStateName.textContent = state.name;
   stageStateLabel.textContent = state.name;
+  stateNameInput.value = state.name;
   cssTitle.textContent = object.name + " · " + state.name;
   selectionOverlayLabel.textContent = object.name;
 
@@ -655,8 +656,11 @@ function setForm(specInput) {
   const spec = normaliseSpec(specInput);
   formSyncing = true;
 
+  for (const checkbox of form.querySelectorAll('input[name="animations"]')) {
+    checkbox.checked = spec.animations.includes(checkbox.value);
+  }
+
   for (const key of [
-    "transition",
     "layout",
     "attachment",
     "coordination",
@@ -708,7 +712,8 @@ function readForm() {
   const object = OBJECTS[selectedObjectId];
 
   return base(object.role, {
-    transition: form.elements.transition.value,
+    animations: [...form.querySelectorAll('input[name="animations"]:checked')]
+      .map((input) => input.value),
     layout: form.elements.layout.value,
     attachment: form.elements.attachment.value,
     coordination: form.elements.coordination.value,
@@ -921,13 +926,8 @@ function syncSizeInputs(sizeMode) {
 
 function addState() {
   const source = activeState();
-  const suggested = "State " + (model.states.length + 1);
-  const rawName = window.prompt("Name this state", suggested);
-  const name = rawName?.replace(/\s+/g, " ").trim();
-
-  if (!name) return;
-
-  const id = uniqueStateId(slugify(name));
+  const name = "New State";
+  const id = uniqueStateId("new-state");
   const state = structuredClone(source);
   state.id = id;
   state.name = name;
@@ -940,6 +940,26 @@ function addState() {
   saveModel();
   renderStateTabs();
   syncSelection();
+
+  requestAnimationFrame(() => {
+    stateNameInput.focus();
+    stateNameInput.select();
+  });
+}
+
+function renameActiveState(value) {
+  const state = activeState();
+  const name = String(value).replace(/\s+/g, " ").slice(0, 60);
+
+  state.name = name || "New State";
+  selectedStateName.textContent = state.name;
+  stageStateLabel.textContent = state.name;
+  cssTitle.textContent = OBJECTS[selectedObjectId].name + " · " + state.name;
+
+  const activeTab = stateTabs.querySelector(`[data-state-id="${state.id}"] span`);
+  if (activeTab) activeTab.textContent = state.name;
+
+  saveModel();
 }
 
 function uniqueStateId(baseId) {
@@ -1296,6 +1316,14 @@ form.addEventListener("change", (event) => {
 });
 
 addStateButton.addEventListener("click", addState);
+stateNameInput.addEventListener("input", (event) => {
+  renameActiveState(event.target.value);
+});
+stateNameInput.addEventListener("blur", () => {
+  if (!stateNameInput.value.trim()) {
+    stateNameInput.value = activeState().name;
+  }
+});
 resetButton.addEventListener("click", resetDemo);
 replayButton.addEventListener("click", () => {
   void replayTransition();

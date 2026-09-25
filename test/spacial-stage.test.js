@@ -12,7 +12,8 @@ import {
   resolvePosition,
   resolveSize,
   resolvedDirectionName,
-  sizeValuesForDimensions
+  sizeValuesForDimensions,
+  transitionFrames
 } from "../src/spacial-stage.js";
 
 test("normalises named-state specs including anchored position and custom vector", () => {
@@ -68,21 +69,43 @@ test("auto and custom directions resolve independently from destination position
   assert.equal(vector.y, 0.8);
 });
 
-test("depth remains a destination property independent of transition and layout", () => {
+test("depth remains a destination property independent of animation effects", () => {
   const background = resolveDepth({
     depth: "background",
-    transition: "reveal",
+    animations: ["reveal", "fade"],
     layout: "push"
   });
-  const focus = resolveDepth({
-    depth: "focus",
-    transition: "collapse",
+  const base = resolveDepth({
+    depth: "base",
+    animations: ["focus", "collapse"],
     layout: "overlay"
   });
 
-  assert.ok(background.blur > focus.blur);
-  assert.ok(background.opacity < focus.opacity);
-  assert.equal(focus.opacity, 1);
+  assert.ok(background.blur > base.blur);
+  assert.ok(background.opacity < base.opacity);
+  assert.equal(base.opacity, 1);
+});
+
+test("legacy destination focus migrates to base while Focus is available as an animation", () => {
+  const migrated = normaliseSpec({
+    depth: "focus",
+    transition: "fade"
+  });
+  const composed = normaliseSpec({
+    depth: "base",
+    animations: ["slide", "fade", "focus", "fade"]
+  });
+
+  assert.equal(migrated.depth, "base");
+  assert.deepEqual(migrated.animations, ["fade"]);
+  assert.deepEqual(composed.animations, ["slide", "fade", "focus"]);
+});
+
+test("an explicit empty animation list means snap with no animation effects", () => {
+  const spec = normaliseSpec({ animations: [] });
+
+  assert.deepEqual(spec.animations, []);
+  assert.equal(spec.transition, "none");
 });
 
 test("natural, absolute and percentage sizes resolve independently from scale", () => {
@@ -221,13 +244,105 @@ test("drag coordinates round-trip through percentage anchor values", () => {
   assert.ok(Math.abs((element.offsetTop + resolved.y) - 410) < 0.001);
 });
 
+test("animation effects compose from independent starting properties", () => {
+  const container = { clientWidth: 1000, clientHeight: 600 };
+  const element = {
+    offsetWidth: 200,
+    offsetHeight: 100,
+    offsetLeft: 0,
+    offsetTop: 0,
+    dataset: {
+      stageNaturalWidth: "200",
+      stageNaturalHeight: "100"
+    }
+  };
+
+  const [start, end] = transitionFrames(
+    element,
+    container,
+    {
+      animations: ["slide"],
+      horizontalAnchor: "left",
+      verticalAnchor: "top",
+      positionX: 0,
+      positionY: 0
+    },
+    {
+      animations: ["slide", "fade", "focus"],
+      horizontalAnchor: "right",
+      verticalAnchor: "bottom",
+      positionX: 0,
+      positionY: 0,
+      depth: "base"
+    }
+  );
+
+  assert.equal(start.opacity, "0");
+  assert.match(start.filter, /blur\(12px\)/);
+  assert.match(start.transform, /scale\(\.94\)$/);
+  assert.notEqual(start.transform, end.transform);
+  assert.equal(end.opacity, "1");
+});
+
+test("fade without slide starts at the destination geometry", () => {
+  const container = { clientWidth: 1000, clientHeight: 600 };
+  const element = {
+    offsetWidth: 200,
+    offsetHeight: 100,
+    offsetLeft: 0,
+    offsetTop: 0,
+    dataset: {
+      stageNaturalWidth: "200",
+      stageNaturalHeight: "100"
+    }
+  };
+
+  const [start, end] = transitionFrames(
+    element,
+    container,
+    { animations: ["slide"], horizontalAnchor: "left" },
+    { animations: ["fade"], horizontalAnchor: "right", depth: "base" }
+  );
+
+  assert.equal(start.transform, end.transform);
+  assert.equal(start.width, end.width);
+  assert.equal(start.opacity, "0");
+});
+
+test("reveal and collapse can be combined", () => {
+  const container = { clientWidth: 1000, clientHeight: 600 };
+  const element = {
+    offsetWidth: 200,
+    offsetHeight: 100,
+    offsetLeft: 0,
+    offsetTop: 0,
+    dataset: {
+      stageNaturalWidth: "200",
+      stageNaturalHeight: "100"
+    }
+  };
+
+  const [start, end] = transitionFrames(
+    element,
+    container,
+    {},
+    {
+      animations: ["reveal", "collapse"],
+      direction: "left"
+    }
+  );
+
+  assert.notEqual(start.clipPath, end.clipPath);
+  assert.match(start.transform, /scaleX\(\.2\)/);
+});
+
 test("element CSS exposes every authored state axis including position", () => {
   const css = cssForElement({
     selector: '[data-object="svg"]',
     stateName: "cloud",
     spec: {
       role: "shared",
-      transition: "slide",
+      animations: ["slide", "fade", "focus"],
       layout: "overlay",
       attachment: "free",
       coordination: "follow",
@@ -248,7 +363,7 @@ test("element CSS exposes every authored state axis including position", () => {
   });
 
   assert.match(css, /data-stage-state="cloud"/);
-  assert.match(css, /--stage-transition: slide/);
+  assert.match(css, /--stage-animations: slide fade focus/);
   assert.match(css, /--stage-layout: overlay/);
   assert.match(css, /--stage-attachment: free/);
   assert.match(css, /--stage-coordination: follow/);
@@ -270,7 +385,7 @@ test("parent CSS explains layout and coordination requirements", () => {
     objectSelector: '[data-object="panel"]',
     spec: {
       role: "panel",
-      transition: "reveal",
+      animations: ["reveal", "fade"],
       layout: "push",
       attachment: "dock",
       coordination: "stagger",
