@@ -620,6 +620,7 @@ async function replayTransition() {
   clearTimeout(replayTimer);
   replaySequence += 1;
   cancelObjectAnimations();
+  updateSelectionOverlay();
 
   applyStateImmediately(fromState);
   await nextFrame();
@@ -744,6 +745,7 @@ function updateSelectedSpec(event) {
   syncPositionUnits(newSpec.positionMode);
   saveModel();
   updateCssInspector();
+  updateSelectionOverlay();
   scheduleSelectedReplay();
 }
 
@@ -771,6 +773,7 @@ async function replaySelectedObjectFromPrevious() {
   const targetSpec = activeSpec();
   const sequence = ++replaySequence;
 
+  updateSelectionOverlay();
   object.element.getAnimations().forEach((animation) => animation.cancel());
 
   if (selectedObjectId === "cards") {
