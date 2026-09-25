@@ -35,7 +35,8 @@ const PRESETS = {
   cloudRail: {
     label: "Cloud rail",
     role: "panel",
-    transition: "push",
+    transition: "slide",
+    layout: "push",
     attachment: "dock",
     coordination: "none",
     depth: "foreground",
@@ -51,6 +52,7 @@ const PRESETS = {
     label: "Top header",
     role: "panel",
     transition: "reveal",
+    layout: "overlay",
     attachment: "dock",
     coordination: "none",
     depth: "foreground",
@@ -65,7 +67,8 @@ const PRESETS = {
   sharedFocus: {
     label: "Shared focus",
     role: "shared",
-    transition: "push",
+    transition: "slide",
+    layout: "overlay",
     attachment: "free",
     coordination: "none",
     depth: "focus",
@@ -81,6 +84,7 @@ const PRESETS = {
     label: "Dock card",
     role: "content",
     transition: "slide",
+    layout: "reflow",
     attachment: "dock",
     coordination: "none",
     depth: "focus",
@@ -96,6 +100,7 @@ const PRESETS = {
     label: "Stagger cards",
     role: "collection",
     transition: "reveal",
+    layout: "overlay",
     attachment: "free",
     coordination: "stagger",
     depth: "focus",
@@ -111,6 +116,7 @@ const PRESETS = {
     label: "Follow",
     role: "shared",
     transition: "slide",
+    layout: "overlay",
     attachment: "float",
     coordination: "follow",
     depth: "foreground",
@@ -126,6 +132,7 @@ const PRESETS = {
     label: "Swap",
     role: "content",
     transition: "slide",
+    layout: "replace",
     attachment: "free",
     coordination: "swap",
     depth: "focus",
@@ -141,6 +148,7 @@ const PRESETS = {
     label: "Collapse",
     role: "content",
     transition: "collapse",
+    layout: "reflow",
     attachment: "free",
     coordination: "none",
     depth: "focus",
@@ -156,7 +164,8 @@ const PRESETS = {
 
 const DEFAULT_FORM = {
   role: "shared",
-  transition: "push",
+  transition: "slide",
+  layout: "overlay",
   attachment: "free",
   coordination: "none",
   depth: "focus",
@@ -186,12 +195,10 @@ function displayTerm(name, value) {
 }
 
 function buildSpec() {
-  const scaleInput = Number(form.elements.scale.value) / 100;
-  const opacityInput = Number(form.elements.opacity.value) / 100;
-
   return normaliseSpec({
     role: selected("role"),
     transition: selected("transition"),
+    layout: selected("layout"),
     attachment: selected("attachment"),
     coordination: selected("coordination"),
     depth: selected("depth"),
@@ -200,8 +207,8 @@ function buildSpec() {
     duration: Number(form.elements.duration.value),
     stagger: Number(form.elements.stagger.value),
     blur: Number(form.elements.blur.value),
-    scale: scaleInput,
-    opacity: opacityInput,
+    scale: Number(form.elements.scale.value) / 100,
+    opacity: Number(form.elements.opacity.value) / 100,
     easing: form.elements.easing.value.trim() || DEFAULT_FORM.easing,
     customVector: {
       x: Number(form.elements.customX.value),
@@ -211,16 +218,15 @@ function buildSpec() {
 }
 
 function currentPhrase(spec) {
-  const terms = [
+  return [
     displayTerm("role", spec.role),
     displayTerm("transition", spec.transition),
+    displayTerm("layout", spec.layout),
     displayTerm("attachment", spec.attachment),
     displayTerm("coordination", spec.coordination),
     displayTerm("depth", spec.depth),
     displayTerm("direction", spec.direction)
-  ];
-
-  return terms.map(titleCase).join(" · ");
+  ].map(titleCase).join(" · ");
 }
 
 function updatePreview() {
@@ -233,6 +239,7 @@ function updatePreview() {
   spec: ${JSON.stringify({
     role: spec.role,
     transition: spec.transition,
+    layout: spec.layout,
     attachment: spec.attachment,
     coordination: spec.coordination,
     depth: spec.depth,
@@ -252,7 +259,7 @@ function updatePreview() {
 }
 
 function syncCustomFields() {
-  ["role", "transition", "attachment", "coordination", "depth", "direction"].forEach((name) => {
+  ["role", "transition", "layout", "attachment", "coordination", "depth", "direction"].forEach((name) => {
     const custom = document.querySelector(`[data-custom-for="${name}"]`);
     if (!custom) return;
     custom.hidden = selected(name) !== "custom";
@@ -310,8 +317,8 @@ function prepareScene(spec, { keepAnimations = false } = {}) {
     }
   }
 
-  if (spec.coordination === "swap") {
-    if (!keepAnimations) objects.swap.classList.add("is-demo-active");
+  if (spec.coordination === "swap" && !keepAnimations) {
+    objects.swap.classList.add("is-demo-active");
   }
 
   if (spec.coordination === "follow") {
@@ -332,8 +339,8 @@ function playTargets(spec, primary) {
   return primary;
 }
 
-function pushTargetsFor(spec, primary) {
-  if (spec.transition !== "push") return [];
+function layoutTargetsFor(spec, primary) {
+  if (spec.layout === "overlay") return [];
 
   if (spec.role === "panel") {
     return [objects.shared];
@@ -343,7 +350,7 @@ function pushTargetsFor(spec, primary) {
     return [objects.content];
   }
 
-  return [];
+  return [objects.shared];
 }
 
 async function play() {
@@ -357,11 +364,9 @@ async function play() {
   const primary = prepareScene(spec);
   const targets = playTargets(spec, primary);
 
-  if (Array.isArray(targets)) {
-    targets.forEach((element) => element.classList.add("is-demo-active"));
-  } else {
-    targets.classList.add("is-demo-active");
-  }
+  (Array.isArray(targets) ? targets : [targets]).forEach((element) => {
+    element.classList.add("is-demo-active");
+  });
 
   if (spec.coordination === "swap") {
     objects.swap.classList.add("is-demo-active");
@@ -371,8 +376,8 @@ async function play() {
     objects.followers.classList.add("is-demo-active");
   }
 
-  const pushTargets = pushTargetsFor(spec, primary);
-  pushTargets.forEach((element) => element.classList.add("is-demo-active"));
+  const layoutTargets = layoutTargetsFor(spec, primary);
+  layoutTargets.forEach((element) => element.classList.add("is-demo-active"));
 
   try {
     await playMotion({
@@ -381,7 +386,7 @@ async function play() {
       followTargets: spec.coordination === "follow"
         ? [...objects.followers.querySelectorAll("span")]
         : [],
-      pushTargets,
+      layoutTargets,
       container: stage,
       spec
     });
@@ -407,7 +412,7 @@ function setPreset(name) {
 
   resetMotionState();
 
-  ["role", "transition", "attachment", "coordination", "depth", "direction"].forEach((key) => {
+  ["role", "transition", "layout", "attachment", "coordination", "depth", "direction"].forEach((key) => {
     setRadio(key, preset[key]);
   });
 
@@ -429,7 +434,7 @@ function setPreset(name) {
 function resetForm() {
   resetMotionState();
 
-  ["role", "transition", "attachment", "coordination", "depth", "direction"].forEach((key) => {
+  ["role", "transition", "layout", "attachment", "coordination", "depth", "direction"].forEach((key) => {
     setRadio(key, DEFAULT_FORM[key]);
   });
 
