@@ -69,36 +69,50 @@ test("auto and custom directions resolve independently from destination position
   assert.equal(vector.y, 0.8);
 });
 
-test("depth remains a destination property independent of animation effects", () => {
-  const background = resolveDepth({
-    depth: "background",
+test("depth only controls blur, softening and opacity", () => {
+  const blur = resolveDepth({
+    depth: "blur",
     animations: ["reveal", "fade"],
-    layout: "push"
+    layout: "push",
+    scale: 1.4,
+    zIndex: 99
   });
-  const base = resolveDepth({
-    depth: "base",
+  const focus = resolveDepth({
+    depth: "focus",
     animations: ["focus", "collapse"],
-    layout: "overlay"
+    layout: "overlay",
+    scale: 0.7,
+    zIndex: -5
   });
 
-  assert.ok(background.blur > base.blur);
-  assert.ok(background.opacity < base.opacity);
-  assert.equal(base.opacity, 1);
+  assert.ok(blur.blur > focus.blur);
+  assert.ok(blur.opacity < focus.opacity);
+  assert.ok(blur.saturation < focus.saturation);
+  assert.equal(focus.opacity, 1);
+  assert.equal("scale" in blur, false);
+  assert.equal("z" in blur, false);
 });
 
-test("legacy destination focus migrates to base while Focus is available as an animation", () => {
-  const migrated = normaliseSpec({
-    depth: "focus",
+test("legacy depth presets migrate to Blur or Focus and preserve old stacking", () => {
+  const background = normaliseSpec({
+    depth: "background",
     transition: "fade"
   });
-  const composed = normaliseSpec({
-    depth: "base",
-    animations: ["slide", "fade", "focus", "fade"]
+  const base = normaliseSpec({
+    depth: "focus",
+    animations: ["slide", "focus"]
+  });
+  const foreground = normaliseSpec({
+    depth: "foreground"
   });
 
-  assert.equal(migrated.depth, "base");
-  assert.deepEqual(migrated.animations, ["fade"]);
-  assert.deepEqual(composed.animations, ["slide", "fade", "focus"]);
+  assert.equal(background.depth, "blur");
+  assert.equal(background.zIndex, 1);
+  assert.equal(base.depth, "focus");
+  assert.equal(base.zIndex, 10);
+  assert.equal(foreground.depth, "focus");
+  assert.equal(foreground.zIndex, 20);
+  assert.deepEqual(background.animations, ["fade"]);
 });
 
 test("an explicit empty animation list means snap with no animation effects", () => {
@@ -273,7 +287,7 @@ test("animation effects compose from independent starting properties", () => {
       verticalAnchor: "bottom",
       positionX: 0,
       positionY: 0,
-      depth: "base"
+      depth: "focus"
     }
   );
 
@@ -301,7 +315,7 @@ test("fade without slide starts at the destination geometry", () => {
     element,
     container,
     { animations: ["slide"], horizontalAnchor: "left" },
-    { animations: ["fade"], horizontalAnchor: "right", depth: "base" }
+    { animations: ["fade"], horizontalAnchor: "right", depth: "focus" }
   );
 
   assert.equal(start.transform, end.transform);
@@ -346,7 +360,8 @@ test("element CSS exposes every authored state axis including position", () => {
       layout: "overlay",
       attachment: "free",
       coordination: "follow",
-      depth: "background",
+      depth: "blur",
+      zIndex: 7,
       direction: "left",
       horizontalAnchor: "left",
       verticalAnchor: "center",
@@ -367,7 +382,10 @@ test("element CSS exposes every authored state axis including position", () => {
   assert.match(css, /--stage-layout: overlay/);
   assert.match(css, /--stage-attachment: free/);
   assert.match(css, /--stage-coordination: follow/);
-  assert.match(css, /--stage-depth: background/);
+  assert.match(css, /--stage-depth: blur/);
+  assert.match(css, /--stage-softening: 0.82/);
+  assert.match(css, /--stage-z-index: 7/);
+  assert.match(css, /z-index: var\(--stage-z-index\)/);
   assert.match(css, /--stage-direction: left/);
   assert.match(css, /--stage-anchor-x: left/);
   assert.match(css, /--stage-anchor-y: center/);
@@ -377,6 +395,36 @@ test("element CSS exposes every authored state axis including position", () => {
   assert.match(css, /--stage-size-mode: percent/);
   assert.match(css, /--stage-size-width: 44%/);
   assert.match(css, /--stage-size-height: 36%/);
+});
+
+test("z-index and scale are independent destination settings", () => {
+  const container = { clientWidth: 1000, clientHeight: 600 };
+  const element = {
+    offsetWidth: 200,
+    offsetHeight: 100,
+    offsetLeft: 0,
+    offsetTop: 0,
+    dataset: {
+      stageNaturalWidth: "200",
+      stageNaturalHeight: "100"
+    }
+  };
+
+  const [frame] = transitionFrames(
+    element,
+    container,
+    {},
+    {
+      animations: [],
+      depth: "blur",
+      zIndex: 42,
+      scale: 1.25
+    }
+  );
+
+  assert.equal(frame.zIndex, "42");
+  assert.match(frame.transform, /scale\(1\.25\)/);
+  assert.match(frame.filter, /saturate\(0\.82\)/);
 });
 
 test("parent CSS explains layout and coordination requirements", () => {
