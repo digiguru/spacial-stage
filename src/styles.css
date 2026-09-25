@@ -657,6 +657,86 @@ summary:focus-visible {
 }
 .z-index-warning[hidden] { display: none; }
 
+.rotation-control-group,
+.transform-3d-control-group {
+  display: grid;
+  gap: 10px;
+}
+.rotation-control-group .single-value-control input[type="range"] {
+  grid-column: 1 / -1;
+  width: 100%;
+  accent-color: var(--stage);
+}
+.rotation-control-group .single-value-control output {
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+.transform-3d-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 11px;
+}
+.transform-3d-grid label {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 5px;
+  color: var(--muted);
+  font-size: 9px;
+  font-weight: 800;
+}
+.transform-3d-grid label > input {
+  grid-column: 1 / -1;
+  width: 100%;
+}
+.transform-3d-grid input[type="range"] {
+  accent-color: var(--stage);
+}
+.transform-3d-grid input[type="number"] {
+  min-height: 38px;
+  padding: 8px 9px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: #fff;
+  color: var(--ink);
+}
+.transform-3d-grid output {
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+.transform-3d-grid small {
+  grid-column: 1 / -1;
+  color: var(--muted);
+  font-size: 8px;
+  font-weight: 560;
+  line-height: 1.35;
+}
+.layering-approaches {
+  overflow: hidden;
+  border: 1px dashed rgba(23,24,22,.16);
+  border-radius: 12px;
+  background: rgba(255,255,255,.48);
+}
+.layering-approaches summary {
+  padding: 10px 11px;
+  cursor: pointer;
+  color: var(--ink);
+  font-size: 9px;
+  font-weight: 850;
+}
+.layering-copy {
+  display: grid;
+  gap: 8px;
+  padding: 0 11px 11px;
+}
+.layering-copy p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 9px;
+  line-height: 1.45;
+}
+.layering-copy strong { color: var(--ink); }
+
 .position-control-group,
 .size-control-group {
   display: grid;
@@ -874,6 +954,6 @@ code { font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace; }
   .panel-object { width: min(230px,70%); }
   .inspector-sticky { padding: 20px 14px 40px; }
   .control-stack, .css-grid { grid-template-columns: 1fr; }
-  .override-grid, .position-values, .option-cards, .compact-options, .animation-options { grid-template-columns: 1fr; }
+  .override-grid, .position-values, .option-cards, .compact-options, .animation-options, .transform-3d-grid { grid-template-columns: 1fr; }
   .override-wide { grid-column: auto; }
 }
