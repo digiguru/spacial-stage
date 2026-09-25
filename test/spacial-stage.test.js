@@ -2,32 +2,36 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import {
-  buildLayoutFrames,
-  buildTransitionFrames,
-  motionMarkup,
+  cssForElement,
+  cssForParent,
+  layoutCompanionFrames,
   normaliseSpec,
   resolveDepth,
-  resolveDirection
+  resolveDirection,
+  resolvedDirectionName
 } from "../src/spacial-stage.js";
 
-test("normalises numeric custom values", () => {
+test("normalises named-state specs including offsets and custom vector", () => {
   const spec = normaliseSpec({
-    distance: "240",
+    role: "shared",
+    offsetX: "240",
+    offsetY: "-90",
     duration: "900",
+    scale: "1.2",
     customVector: { x: "3", y: "4" }
   });
 
-  assert.equal(spec.distance, 240);
+  assert.equal(spec.offsetX, 240);
+  assert.equal(spec.offsetY, -90);
   assert.equal(spec.duration, 900);
+  assert.equal(spec.scale, 1.2);
   assert.deepEqual(spec.customVector, { x: 3, y: 4 });
 });
 
-test("uses role-specific automatic directions", () => {
+test("auto and custom directions resolve independently from destination offsets", () => {
   assert.deepEqual(resolveDirection({ role: "panel", direction: "auto" }), { x: -1, y: 0 });
-  assert.deepEqual(resolveDirection({ role: "content", direction: "auto" }), { x: 0, y: 1 });
-});
+  assert.equal(resolvedDirectionName({ role: "shared", direction: "auto" }), "right");
 
-test("normalises custom direction vectors", () => {
   const vector = resolveDirection({
     direction: "custom",
     customVector: { x: 3, y: 4 }
@@ -37,57 +41,90 @@ test("normalises custom direction vectors", () => {
   assert.equal(vector.y, 0.8);
 });
 
-test("treats focus as depth rather than a transition", () => {
-  const focus = resolveDepth({ depth: "focus" });
-  const background = resolveDepth({ depth: "background" });
+test("depth remains a destination property independent of transition and layout", () => {
+  const background = resolveDepth({ depth: "background", transition: "reveal", layout: "push" });
+  const focus = resolveDepth({ depth: "focus", transition: "collapse", layout: "overlay" });
 
-  assert.equal(focus.blur, 0);
-  assert.equal(focus.opacity, 1);
   assert.ok(background.blur > focus.blur);
   assert.ok(background.opacity < focus.opacity);
+  assert.equal(focus.opacity, 1);
 });
 
-test("reveal clips from the requested edge", () => {
-  const [from, to] = buildTransitionFrames({
-    transition: "reveal",
-    direction: "left"
+test("element CSS exposes every authored state axis", () => {
+  const css = cssForElement({
+    selector: '[data-object="svg"]',
+    stateName: "cloud",
+    spec: {
+      role: "shared",
+      transition: "slide",
+      layout: "overlay",
+      attachment: "free",
+      coordination: "follow",
+      depth: "background",
+      direction: "left",
+      distance: 320,
+      duration: 840,
+      stagger: 90,
+      offsetX: -280,
+      offsetY: 70
+    }
   });
 
-  assert.equal(from.clipPath, "inset(0% 100% 0% 0%)");
-  assert.equal(from.opacity, 0);
-  assert.equal(to.clipPath, "inset(0% 0% 0% 0%)");
+  assert.match(css, /data-stage-state="cloud"/);
+  assert.match(css, /--stage-transition: slide/);
+  assert.match(css, /--stage-layout: overlay/);
+  assert.match(css, /--stage-attachment: free/);
+  assert.match(css, /--stage-coordination: follow/);
+  assert.match(css, /--stage-depth: background/);
+  assert.match(css, /--stage-direction: left/);
+  assert.match(css, /--stage-offset-x: -280px/);
 });
 
-test("push is a layout effect separate from transition style", () => {
-  const [, to] = buildLayoutFrames({
+test("parent CSS explains layout and coordination requirements", () => {
+  const css = cssForParent({
+    stageSelector: "[data-stage]",
+    objectSelector: '[data-object="panel"]',
+    spec: {
+      role: "panel",
+      transition: "reveal",
+      layout: "push",
+      attachment: "dock",
+      coordination: "stagger",
+      direction: "left",
+      distance: 300,
+      stagger: 80
+    }
+  });
+
+  assert.match(css, /position: relative/);
+  assert.match(css, /Dock requires a positioned containing block/);
+  assert.match(css, /Layout effect: push/);
+  assert.match(css, /--stage-layout-x/);
+  assert.match(css, /transition-delay/);
+});
+
+test("layout effects are separate from object transition style", () => {
+  assert.equal(layoutCompanionFrames({ layout: "overlay" }), null);
+
+  const frames = layoutCompanionFrames({
     layout: "push",
     direction: "left",
     distance: 200
   });
 
-  assert.match(to.transform, /translate3d\(88px, 0px, 0\)/);
+  assert.equal(frames.length, 3);
+  assert.match(frames[1].transform, /translate3d\(68px, 0px, 0\)/);
+  assert.equal(frames.at(-1).transform, "translate3d(0px, 0px, 0)");
 });
 
-test("overlay does not move neighbouring layout", () => {
-  assert.equal(buildLayoutFrames({ layout: "overlay" }), null);
-});
-
-test("creates declarative markup for every taxonomy axis", () => {
-  const markup = motionMarkup({
-    role: "panel",
-    transition: "reveal",
-    layout: "push",
-    attachment: "dock",
-    coordination: "follow",
-    depth: "foreground",
-    direction: "left"
+test("custom CSS remains an explicit escape hatch", () => {
+  const css = cssForElement({
+    spec: {
+      customCss: "border-radius: 40px; mix-blend-mode: screen;"
+    }
   });
 
-  assert.match(markup, /data-stage-role="panel"/);
-  assert.match(markup, /data-stage-transition="reveal"/);
-  assert.match(markup, /data-stage-layout="push"/);
-  assert.match(markup, /data-stage-attachment="dock"/);
-  assert.match(markup, /data-stage-coordination="follow"/);
-  assert.match(markup, /data-stage-depth="foreground"/);
-  assert.match(markup, /data-stage-direction="left"/);
+  assert.match(css, /\/\* custom CSS \*\//);
+  assert.match(css, /border-radius: 40px;/);
+  assert.match(css, /mix-blend-mode: screen;/);
 });
