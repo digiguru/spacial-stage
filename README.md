@@ -66,13 +66,13 @@ Content + [] + Overlay + Free + Focus + z10 + Top
 
 An empty animation list means the object snaps directly to its new destination. Effects compose independently:
 
-- **Slide** interpolates destination position and size from the previous state.
+- **Slide** interpolates destination position, size, rotation and 3D transform from the previous state.
 - **Fade** arrives from transparent.
 - **Reveal** opens a directional clip/mask.
 - **Focus** resolves from extra blur and a softer scale into the destination appearance.
 - **Collapse** expands from a compressed directional edge.
 
-This also resolves the old overloaded word **Focus**. Focus is now only an animation. The middle destination depth is **Base**.
+**Focus** is intentionally used in two related places now: Focus animation means “resolve from extra softness into the destination”, while Focus depth means “the destination itself is sharp”. That allows combinations such as Focus animation + Blur depth.
 
 These names are not considered final. The playground exists specifically to expose where the taxonomy feels awkward.
 
@@ -147,6 +147,160 @@ Direct resize also adjusts the stored anchored position so the top-left visual c
 
 **Size = geometry. Scale = presentation transform.**
 
+## Rotation authoring
+
+Rotation is a destination-state property just like position and size.
+
+Each object stores:
+
+- **Rotate Z** — the normal 2D clockwise/counter-clockwise angle.
+
+When **Slide** is selected, Rotate Z interpolates from the previous state's angle into the current state's angle. Without Slide, the object snaps to the new angle before any other selected effects such as Fade run.
+
+The small rotation added by the Float attachment remains additive, so an authored Rotate Z value and Float can coexist.
+
+## Local 3D transforms
+
+Each object can also author a local 3D destination transform:
+
+- **Rotate X** — pitch around the horizontal axis;
+- **Rotate Y** — yaw around the vertical axis;
+- **Translate Z** — move toward or away from the viewer;
+- **Perspective** — camera distance controlling how strong the 3D distortion appears.
+
+The generated transform is kept structurally consistent between states:
+
+```css
+perspective(...)
+translate3d(x, y, z)
+rotateX(...)
+rotateY(...)
+rotateZ(...)
+scale(...)
+```
+
+That consistency lets the browser interpolate the transform smoothly when Slide is selected.
+
+This first implementation is deliberately **single-object 3D**. It treats each stage object as one transformable plane and enables `transform-style: preserve-3d`, but it does not yet introduce a full layer hierarchy.
+
+## Approaches for multiple 3D layers
+
+There are four sensible ways to extend the model.
+
+### 1. Single transformed object
+
+**Implemented now.**
+
+The whole object is one 3D plane.
+
+Best for:
+
+- cards;
+- panels;
+- posters/screens;
+- simple tilt/parallax;
+- rotating a whole component.
+
+Advantages:
+
+- simple state model;
+- current selection/drag/resize logic still works;
+- no hierarchy UI required.
+
+Limit:
+
+- everything inside the object remains effectively one authored plane.
+
+### 2. Child layer stack
+
+A stage object owns a set of named internal layers:
+
+```
+Card
+├── background   z: -20
+├── illustration z: 0
+├── title        z: 18
+└── badge        z: 35
+```
+
+The parent owns position/rotation/perspective; each child owns a local X/Y/Z offset.
+
+Best for:
+
+- parallax cards;
+- device mock-ups;
+- layered diagrams;
+- visual depth without needing independent route/state objects.
+
+Advantages:
+
+- relatively compact UI;
+- child layers inherit parent motion;
+- easy to expose a “Layers” inspector.
+
+Trade-off:
+
+- layers are subordinate to the parent, so they are not fully independent stage objects.
+
+### 3. 3D object group / scene graph
+
+Introduce a Group object that can contain ordinary stage objects. The group owns shared transform/perspective, while children retain independent state, animation and X/Y/Z transforms.
+
+```
+Scene group
+├── panel
+├── shared SVG
+├── title
+└── cards
+```
+
+Best for:
+
+- genuine spatial scenes;
+- coordinated camera-like transitions;
+- objects passing in front of/behind each other;
+- reusable 3D compositions.
+
+Advantages:
+
+- most expressive model;
+- hierarchy naturally supports nested transforms;
+- works well with `transform-style: preserve-3d`.
+
+Trade-offs:
+
+- requires hierarchy selection;
+- group vs child drag behaviour;
+- inherited transforms;
+- more complex bounding boxes and hit-testing;
+- z-index and Translate Z interaction need very explicit rules.
+
+### 4. Visual-only pseudo layers
+
+Generate front/back/shadow/thickness faces from one object using pseudo-elements or internal generated wrappers.
+
+Best for:
+
+- adding thickness;
+- card backs;
+- simple extrusion;
+- non-interactive decoration.
+
+Advantages:
+
+- cheap;
+- almost no new authoring model.
+
+Trade-off:
+
+- generated faces are not independent or interactive.
+
+### Suggested direction
+
+The strongest next step is **Child layer stack first**, then promote to a full **Group / scene graph** only if real use cases demand independent nested stage objects.
+
+That gives useful parallax and real Z separation without immediately forcing the entire authoring tool to become a 3D scene editor.
+
 ## Edit-to-replay authoring loop
 
 Changing any motion parameter replays **only the selected object** from the previously selected named state into the current state using the newly edited configuration.
@@ -162,6 +316,8 @@ Every object/state also exposes numeric and raw-CSS escape hatches:
 - anchored X/Y destination offsets;
 - horizontal/vertical anchor and pixel/percentage position mode;
 - natural, pixel or percentage destination width/height;
+- Rotate Z destination angle;
+- Rotate X / Rotate Y / Translate Z / Perspective for local 3D;
 - custom X/Y direction vector;
 - travel distance;
 - duration;
@@ -185,7 +341,7 @@ This contains:
 
 - every semantic parameter as CSS custom properties, including the composed animation list;
 - destination width and height;
-- the destination transform;
+- the destination 2D/3D transform;
 - depth-derived blur, softening and opacity;
 - explicit scale and z-index;
 - custom CSS appended after generated declarations.

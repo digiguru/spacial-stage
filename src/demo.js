@@ -77,6 +77,11 @@ const base = (role, overrides = {}) => normaliseSpec({
   coordination: "none",
   depth: "focus",
   zIndex: 10,
+  rotateZ: 0,
+  rotateX: 0,
+  rotateY: 0,
+  translateZ: 0,
+  perspective: 1000,
   direction: "auto",
   horizontalAnchor: "center",
   verticalAnchor: "center",
@@ -157,6 +162,10 @@ const DEFAULT_STATES = [
         positionMode: "percent",
         positionX: -5,
         positionY: -8,
+        rotateZ: -3,
+        rotateX: 4,
+        rotateY: -7,
+        translateZ: 20,
         distance: 120,
         duration: 560,
         stagger: 90,
@@ -229,6 +238,10 @@ const DEFAULT_STATES = [
         positionMode: "percent",
         positionX: -6,
         positionY: 10,
+        rotateZ: 2,
+        rotateX: -5,
+        rotateY: 8,
+        translateZ: 36,
         distance: 150,
         duration: 540,
         stagger: 85,
@@ -298,6 +311,10 @@ const DEFAULT_STATES = [
         positionMode: "percent",
         positionX: -5,
         positionY: -7,
+        rotateZ: -1,
+        rotateX: 3,
+        rotateY: -5,
+        translateZ: 24,
         distance: 180,
         duration: 580,
         stagger: 100,
@@ -715,6 +732,11 @@ function setForm(specInput) {
   form.elements.scale.value = Math.round(spec.scale * 100);
   form.elements.opacity.value = Math.round(spec.opacity * 100);
   form.elements.zIndex.value = spec.zIndex;
+  form.elements.rotateZ.value = spec.rotateZ;
+  form.elements.rotateX.value = spec.rotateX;
+  form.elements.rotateY.value = spec.rotateY;
+  form.elements.translateZ.value = spec.translateZ;
+  form.elements.perspective.value = spec.perspective;
   form.elements.easing.value = spec.easing;
   form.elements.customCss.value = spec.customCss;
 
@@ -756,6 +778,11 @@ function readForm() {
     scale: Number(form.elements.scale.value) / 100,
     opacity: Number(form.elements.opacity.value) / 100,
     zIndex: Number(form.elements.zIndex.value),
+    rotateZ: Number(form.elements.rotateZ.value),
+    rotateX: Number(form.elements.rotateX.value),
+    rotateY: Number(form.elements.rotateY.value),
+    translateZ: Number(form.elements.translateZ.value),
+    perspective: Number(form.elements.perspective.value),
     easing: form.elements.easing.value.trim(),
     customCss: form.elements.customCss.value
   });
@@ -915,7 +942,10 @@ function syncOutputs() {
     stagger: (value) => value + "ms",
     blur: (value) => value + "px",
     scale: (value) => (Number(value) / 100).toFixed(2),
-    opacity: (value) => (Number(value) / 100).toFixed(2)
+    opacity: (value) => (Number(value) / 100).toFixed(2),
+    rotateZ: (value) => value + "°",
+    rotateX: (value) => value + "°",
+    rotateY: (value) => value + "°"
   };
 
   for (const [name, format] of Object.entries(formats)) {

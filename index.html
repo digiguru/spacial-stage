@@ -184,7 +184,7 @@
                 <legend>Animations</legend>
                 <p class="control-help">Choose zero, one or several effects. Zero means the object snaps straight to its destination state.</p>
                 <div class="segmented option-cards animation-options">
-                  <label><input type="checkbox" name="animations" value="slide" data-help="Interpolate position and size from the previous state into this destination." /><span><strong>Slide</strong></span></label>
+                  <label><input type="checkbox" name="animations" value="slide" data-help="Interpolate position, size, rotation and 3D transform from the previous state into this destination." /><span><strong>Slide</strong></span></label>
                   <label><input type="checkbox" name="animations" value="fade" data-help="Arrive from transparent to the destination opacity." /><span><strong>Fade</strong></span></label>
                   <label><input type="checkbox" name="animations" value="reveal" data-help="Open a directional clip or mask until the whole object is visible." /><span><strong>Reveal</strong></span></label>
                   <label><input type="checkbox" name="animations" value="focus" data-help="Resolve from soft, blurred and slightly reduced into the destination appearance." /><span><strong>Focus</strong></span></label>
@@ -324,6 +324,56 @@
                   <label><span>Height</span><input type="number" name="sizeHeight" min="1" step="1" /><small id="sizeHeightUnit">px</small><em>Final layout height before visual Scale.</em></label>
                 </div>
                 <p class="position-drag-hint">Drag the bottom-right destination handle to resize. Natural becomes Pixels on first resize.</p>
+              </fieldset>
+
+              <fieldset class="control-group rotation-control-group">
+                <legend>Rotation</legend>
+                <p class="control-help">Rotation is part of the destination state, just like position and size. Slide animates between the previous and current state's angle.</p>
+                <label class="single-value-control">
+                  <span>Rotate Z</span>
+                  <input type="range" name="rotateZ" min="-180" max="180" step="1" />
+                  <output data-output="rotateZ"></output>
+                  <small>Normal 2D clockwise/counter-clockwise rotation around the object's Z axis.</small>
+                </label>
+              </fieldset>
+
+              <fieldset class="control-group transform-3d-control-group">
+                <legend>3D transform</legend>
+                <p class="control-help">Tilts or moves the whole object in local 3D space. This is single-object 3D; multi-layer scene approaches are described below.</p>
+                <div class="transform-3d-grid">
+                  <label>
+                    <span>Rotate X</span>
+                    <input type="range" name="rotateX" min="-180" max="180" step="1" />
+                    <output data-output="rotateX"></output>
+                    <small>Tilt around the horizontal axis; useful for pitching a card toward or away from you.</small>
+                  </label>
+                  <label>
+                    <span>Rotate Y</span>
+                    <input type="range" name="rotateY" min="-180" max="180" step="1" />
+                    <output data-output="rotateY"></output>
+                    <small>Tilt around the vertical axis; useful for turning a panel or card side-to-side.</small>
+                  </label>
+                  <label>
+                    <span>Translate Z</span>
+                    <input type="number" name="translateZ" step="10" />
+                    <small>Move the object toward (+) or away from (−) the viewer in pixels.</small>
+                  </label>
+                  <label>
+                    <span>Perspective</span>
+                    <input type="number" name="perspective" min="1" step="50" />
+                    <small>Camera distance in pixels. Smaller values create stronger perspective distortion.</small>
+                  </label>
+                </div>
+
+                <details class="layering-approaches">
+                  <summary>3D layering approaches</summary>
+                  <div class="layering-copy">
+                    <p><strong>1. Single transformed object — implemented now.</strong> Treat the whole object as one plane and animate Rotate X/Y/Z, Translate Z and Perspective. Simple and predictable, but internal content stays flat.</p>
+                    <p><strong>2. Child layer stack.</strong> Let one stage object contain named sub-layers, each with its own local Z offset. Good for cards, mock device screens and parallax without turning the whole stage into a scene graph.</p>
+                    <p><strong>3. 3D object group / scene graph.</strong> Create a parent object with shared position/rotation/perspective and multiple child stage objects at independent X/Y/Z coordinates. Most powerful and best for true spatial scenes, but introduces hierarchy, group selection, inherited transforms and more complex hit-testing.</p>
+                    <p><strong>4. Visual-only pseudo layers.</strong> Generate decorative front/back/shadow faces from one object using CSS/pseudo-elements. Cheap and useful for thickness, but those layers are not independently authorable or interactive.</p>
+                  </div>
+                </details>
               </fieldset>
 
               <details class="custom-overrides" open>
