@@ -13,7 +13,8 @@ export const DEPTHS = Object.freeze({
 
 export const DEFAULT_SPEC = Object.freeze({
   role: "shared",
-  transition: "push",
+  transition: "slide",
+  layout: "overlay",
   attachment: "free",
   coordination: "none",
   depth: "focus",
@@ -122,6 +123,15 @@ export function buildTransitionFrames(specInput = {}, options = {}) {
       };
       break;
 
+    case "fade":
+      firstFrame = {
+        transform: transform({ ...to, scale: to.scale * 0.985 }),
+        opacity: 0,
+        filter: `blur(${Math.max(depth.blur, 7)}px) saturate(.92)`,
+        clipPath: "inset(0% 0% 0% 0%)"
+      };
+      break;
+
     case "collapse":
       firstFrame = {
         transform: collapseTransform(to, direction),
@@ -134,6 +144,7 @@ export function buildTransitionFrames(specInput = {}, options = {}) {
       break;
 
     case "slide":
+    default:
       firstFrame = {
         transform: transform({
           ...to,
@@ -142,21 +153,6 @@ export function buildTransitionFrames(specInput = {}, options = {}) {
         }),
         opacity: 0,
         filter: `blur(${depth.blur}px) saturate(.96)`,
-        clipPath: "inset(0% 0% 0% 0%)"
-      };
-      break;
-
-    case "push":
-    default:
-      firstFrame = {
-        transform: transform({
-          ...to,
-          x: to.x + vector.x * distance,
-          y: to.y + vector.y * distance,
-          scale: to.scale * 0.98
-        }),
-        opacity: Math.min(depth.opacity, 0.42),
-        filter: `blur(${Math.max(depth.blur, 2)}px) saturate(.96)`,
         clipPath: "inset(0% 0% 0% 0%)"
       };
       break;
@@ -169,18 +165,45 @@ export function buildExitFrames(specInput = {}, options = {}) {
   return [...buildTransitionFrames(specInput, options)].reverse();
 }
 
-export function buildPushFrames(specInput = {}) {
+export function buildLayoutFrames(specInput = {}) {
   const spec = normaliseSpec(specInput);
   const vector = resolveDirection(spec);
   const amount = Math.min(Math.max(spec.distance * 0.44, 48), 180);
 
-  return [
-    { transform: "translate3d(0px, 0px, 0)" },
-    {
-      transform: `translate3d(${-vector.x * amount}px, ${-vector.y * amount}px, 0)`
-    }
-  ];
+  if (spec.layout === "replace") {
+    return [
+      { transform: "translate3d(0px, 0px, 0) scale(1)", opacity: 1, filter: "blur(0px)" },
+      {
+        transform: `translate3d(${-vector.x * Math.min(amount, 72)}px, ${-vector.y * Math.min(amount, 72)}px, 0) scale(.97)`,
+        opacity: 0,
+        filter: "blur(8px)"
+      }
+    ];
+  }
+
+  if (spec.layout === "reflow") {
+    return [
+      { transform: "translate3d(0px, 0px, 0) scale(1)", opacity: 1 },
+      {
+        transform: `translate3d(${-vector.x * Math.min(amount, 96)}px, ${-vector.y * Math.min(amount, 96)}px, 0) scale(.9)`,
+        opacity: 0.62
+      }
+    ];
+  }
+
+  if (spec.layout === "push") {
+    return [
+      { transform: "translate3d(0px, 0px, 0)" },
+      {
+        transform: `translate3d(${-vector.x * amount}px, ${-vector.y * amount}px, 0)`
+      }
+    ];
+  }
+
+  return null;
 }
+
+export const buildPushFrames = buildLayoutFrames;
 
 export function attachmentFor(element, container, specInput = {}) {
   const spec = normaliseSpec(specInput);
@@ -237,6 +260,7 @@ export async function playMotion({
   targets,
   swapTarget = null,
   followTargets = [],
+  layoutTargets = [],
   pushTargets = [],
   container = null,
   spec: specInput = {}
@@ -307,13 +331,15 @@ export async function playMotion({
     );
   });
 
-  if (spec.transition === "push") {
-    toElements(pushTargets).forEach((element) => {
+  const layoutFrames = buildLayoutFrames(spec);
+  if (layoutFrames) {
+    const affected = [...toElements(layoutTargets), ...toElements(pushTargets)];
+    [...new Set(affected)].forEach((element) => {
       if (reduced) {
-        applyFinalFrame(element, buildPushFrames(spec).at(-1));
+        applyFinalFrame(element, layoutFrames.at(-1));
         return;
       }
-      animations.push(animate(element, buildPushFrames(spec), {
+      animations.push(animate(element, layoutFrames, {
         ...spec,
         duration: Math.max(220, spec.duration * 0.86)
       }, 0));
@@ -337,6 +363,7 @@ export function motionMarkup(specInput = {}) {
   return [
     `data-stage-role="${spec.role}"`,
     `data-stage-transition="${spec.transition}"`,
+    `data-stage-layout="${spec.layout}"`,
     `data-stage-attachment="${spec.attachment}"`,
     `data-stage-coordination="${spec.coordination}"`,
     `data-stage-depth="${spec.depth}"`,
