@@ -24,7 +24,6 @@
         </div>
         <div class="topbar-actions">
           <button id="resetButton" class="button button-secondary" type="button">Reset demo</button>
-          <button id="replayButton" class="button button-primary" type="button">↻ Replay transition</button>
         </div>
       </header>
 
@@ -52,6 +51,9 @@
 
           <div id="stage" class="stage" data-stage data-active-state="home">
             <div class="stage-grid" aria-hidden="true"></div>
+            <div class="stage-actions" aria-label="Playground actions">
+              <button id="replayButton" class="button button-primary stage-replay-button" type="button">↻ Replay</button>
+            </div>
             <div id="selectionOverlay" class="selection-overlay">
               <span id="selectionOverlayLabel" class="selection-overlay-label">Selected</span>
               <button
