@@ -18,11 +18,11 @@
   <a href="/demos/depth-stacking.html">Depth</a>
   <a href="/demos/3d-transforms.html">3D</a>
 </nav></header>
-<main class="demo-shell"><section class="demo-hero"><div><p class="eyebrow">Motion grammar</p><h1>Effects compose.</h1></div><p>Animations are a set, not a single transition type. Toggle combinations and replay the same destination using different starting effects.</p></section><section class="demo-panel"><div class="demo-toolbar"><div class="state-buttons">
+<main class="demo-shell"><section class="demo-hero"><div><p class="eyebrow">Motion grammar</p><h1>Effects compose.</h1></div><p>Animations are a set, not a single transition type. Toggle combinations and replay the same destination using different starting effects.</p></section><section class="demo-panel"><div class="demo-toolbar"><div class="demo-control-stack"><div class="state-buttons">
     <button class="demo-button is-active" data-preset="slide-fade">Slide + Fade</button>
     <button class="demo-button" data-preset="reveal">Reveal</button>
     <button class="demo-button" data-preset="focus-collapse">Focus + Collapse</button>
-  </div><button id="focusedReplay" class="demo-button demo-button-primary">↻ Replay</button></div>
+  </div><div class="state-buttons"><button class="demo-button" data-motion-state="one">State 1</button><button class="demo-button is-active" data-motion-state="two">State 2</button></div></div><button id="focusedReplay" class="demo-button demo-button-primary">↻ Replay 1 → 2</button></div>
   <div class="simple-stage"><div id="focusedObject" class="simple-object"><div class="demo-object-copy"><strong>One card, many arrivals.</strong><p>Use the controls to see the same readable content slide, reveal, blur and collapse without changing its destination.</p></div></div></div>
   <div class="demo-caption"><article><strong>Independent effects</strong><p>Slide owns geometry; Fade owns opacity; Reveal owns clipping; Focus owns softness; Collapse owns directional compression.</p></article><article><strong>Same destination</strong><p>The end state stays fixed while only the arrival recipe changes.</p></article><article><strong>Zero is valid</strong><p>An empty animation set means snap directly to the authored destination.</p></article></div></section></main>
 </body></html>
