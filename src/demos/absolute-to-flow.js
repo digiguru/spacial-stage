@@ -6,6 +6,7 @@ const svgObject = document.querySelector("#flowSvg");
 const stateBackground = document.querySelector("#stateBackground");
 const stateInline = document.querySelector("#stateInline");
 const replayButton = document.querySelector("#replayDemo");
+const replayReverseButton = document.querySelector("#replayReverse");
 
 const DURATION = 900;
 const EASING = "cubic-bezier(.2,.82,.24,1)";
@@ -68,19 +69,20 @@ async function goTo(name, { animate = true } = {}) {
   updateButtons();
 }
 
-async function replay() {
+async function replay(from, to) {
   if (placement.running) return;
 
-  await goTo("background", { animate: false });
+  await goTo(from, { animate: false });
   await new Promise((resolve) =>
     requestAnimationFrame(() => requestAnimationFrame(resolve))
   );
-  await goTo("inline");
+  await goTo(to);
 }
 
 stateBackground.addEventListener("click", () => void goTo("background"));
 stateInline.addEventListener("click", () => void goTo("inline"));
-replayButton.addEventListener("click", () => void replay());
+replayButton.addEventListener("click", () => void replay("background", "inline"));
+replayReverseButton.addEventListener("click", () => void replay("inline", "background"));
 
 window.addEventListener("resize", () => {
   if (placement.running) return;

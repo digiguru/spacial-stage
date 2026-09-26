@@ -45,6 +45,7 @@ a { color:inherit; }
   padding:13px 14px; border-bottom:1px solid var(--line);
 }
 .state-buttons { display:flex; flex-wrap:wrap; gap:7px; }
+.demo-replay-buttons { display:flex; flex-wrap:wrap; justify-content:flex-end; gap:7px; }
 .demo-button {
   min-height:40px; padding:8px 12px; border:1px solid var(--line); border-radius:11px;
   background:#fff; cursor:pointer; font-weight:850; font-size:11px;
@@ -116,4 +117,5 @@ a { color:inherit; }
   .hero-svg { width:250px; height:250px; }
   .demo-caption,.demo-index-grid { grid-template-columns:1fr; }
   .demo-toolbar { align-items:flex-start; flex-direction:column; }
+  .demo-replay-buttons { width:100%; justify-content:flex-start; }
 }
