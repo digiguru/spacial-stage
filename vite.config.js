@@ -6,14 +6,14 @@ export default defineConfig({
   build: {
     rollupOptions: {
       input: {
-        playground: resolve(__dirname, "index.html"),
-        demos: resolve(__dirname, "demos/index.html"),
-        absoluteToFlow: resolve(__dirname, "demos/absolute-to-flow.html"),
-        composedAnimations: resolve(__dirname, "demos/composed-animations.html"),
-        geometry: resolve(__dirname, "demos/geometry.html"),
-        layoutEffects: resolve(__dirname, "demos/layout-effects.html"),
-        depthStacking: resolve(__dirname, "demos/depth-stacking.html"),
-        transforms3d: resolve(__dirname, "demos/3d-transforms.html")
+        playground: resolve(process.cwd(), "index.html"),
+        demos: resolve(process.cwd(), "demos/index.html"),
+        absoluteToFlow: resolve(process.cwd(), "demos/absolute-to-flow.html"),
+        composedAnimations: resolve(process.cwd(), "demos/composed-animations.html"),
+        geometry: resolve(process.cwd(), "demos/geometry.html"),
+        layoutEffects: resolve(process.cwd(), "demos/layout-effects.html"),
+        depthStacking: resolve(process.cwd(), "demos/depth-stacking.html"),
+        transforms3d: resolve(process.cwd(), "demos/3d-transforms.html")
       }
     }
   }
