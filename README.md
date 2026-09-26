@@ -188,6 +188,23 @@ The focused Absolute → Flow demo now uses the placement controller directly an
 
 The demo contains no hand-authored destination rectangle maths: its inline rectangle and slot height are browser-measured by the placement controller.
 
+## Depth of field experiment
+
+The **Depth of Field** demo explores spatial focus across a single tilted text plane.
+
+CSS filters apply to whole elements, so a true continuously varying blur cannot be authored on one DOM element directly. The demo approximates per-depth focus by rendering the same surface into 28 narrow clipped strips. Each strip estimates its local Z-depth from the plane's Rotate Y angle and uses `resolveDepthOfField()` to calculate how much blur it should receive.
+
+The model separates four controls:
+
+- **Focal length / perspective** — camera perspective strength. In the DOM implementation this maps to CSS `perspective`; larger values produce a flatter, longer-lens look.
+- **Focus plane** — the Z-depth that is perfectly sharp.
+- **Focus area** — the depth range around that plane that remains fully sharp.
+- **Aperture / blur strength** — a stylised maximum blur controlling how aggressively near/far depth falls out of focus.
+
+The demo also exposes Near / Middle / Far focus states. Those are destination states: selecting one tweens the focal plane from its current value to the chosen depth.
+
+The reusable `resolveDepthOfField()` helper is deliberately renderer-neutral. Today the demo applies it to clipped DOM slices; a future WebGL/shader renderer could use the same focus profile against a real per-pixel depth map.
+
 ## Focused demo pages
 
 The playground remains the full authoring environment. The demos landing page is now a capability catalogue with focused examples for:
@@ -202,7 +219,7 @@ The playground remains the full authoring environment. The demos landing page is
 - Stagger & Follow coordination;
 - layout effects and depth/stacking;
 - reduced-motion outcomes;
-- 3D transforms, cube spin, parallax and classic Cover Flow.
+- 3D transforms, cube spin, parallax, classic Cover Flow and a sliced-surface Depth of Field experiment.
 
 Discrete-state demos follow one interaction rule: **state buttons are destinations**. Clicking any state tweens from the currently completed state to that destination; clicking the active state is a no-op. If another state is clicked while a transition is running, it is queued and becomes the next destination. Replay controls are convenience sequences that reset to their documented source and then use the same state transition path.
 
