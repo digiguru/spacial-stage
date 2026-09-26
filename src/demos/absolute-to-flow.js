@@ -79,7 +79,7 @@ function settleInline(metrics) {
     top: "auto",
     width: metrics.rect.width + "px",
     height: metrics.rect.height + "px",
-    margin: "0"
+    margin: INLINE_PADDING + "px 0 0"
   });
 }
 
