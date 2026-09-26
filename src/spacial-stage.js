@@ -141,6 +141,36 @@ export function resolveDepth(specInput = {}) {
   };
 }
 
+export function resolveDepthOfField({
+  depth = 0,
+  focusDepth = 0,
+  focusArea = 0.24,
+  maxBlur = 14,
+  falloff = 1.45
+} = {}) {
+  const safeDepth = finiteNumber(depth, 0);
+  const safeFocus = finiteNumber(focusDepth, 0);
+  const safeArea = clamp(finiteNumber(focusArea, 0.24), 0, 2);
+  const safeBlur = Math.max(0, finiteNumber(maxBlur, 14));
+  const safeFalloff = Math.max(0.1, finiteNumber(falloff, 1.45));
+  const halfArea = safeArea / 2;
+  const distance = Math.abs(safeDepth - safeFocus);
+  const outside = Math.max(0, distance - halfArea);
+  const normalised = clamp(
+    outside / Math.max(0.0001, 1 - halfArea),
+    0,
+    1
+  );
+  const amount = Math.pow(normalised, safeFalloff);
+
+  return {
+    blur: safeBlur * amount,
+    sharpness: 1 - amount,
+    distance,
+    inFocus: distance <= halfArea
+  };
+}
+
 export function captureNaturalSize(element) {
   if (!element) return { width: 0, height: 0 };
 
