@@ -220,6 +220,27 @@ summary:focus-visible {
   box-shadow: 0 32px 90px rgba(19,21,19,.18);
   isolation: isolate;
 }
+.stage-actions {
+  position: absolute;
+  z-index: 1200;
+  top: 12px;
+  right: 12px;
+  display: flex;
+  justify-content: flex-end;
+  pointer-events: none;
+}
+.stage-replay-button {
+  min-height: 38px;
+  padding: 8px 12px;
+  border-color: rgba(255,255,255,.18);
+  box-shadow: 0 10px 28px rgba(0,0,0,.24);
+  pointer-events: auto;
+}
+.stage-replay-button:focus-visible {
+  outline: 3px solid rgba(216,255,99,.42);
+  outline-offset: 3px;
+}
+
 .stage-grid {
   position: absolute;
   inset: 0;
@@ -948,6 +969,15 @@ code { font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace; }
   .object-toolbar { align-items: flex-start; flex-direction: column; }
   .object-toolbar-help { text-align: left; }
   .stage { min-height: 590px; border-radius: 21px; }
+  .stage-actions {
+    top: 9px;
+    right: 9px;
+  }
+  .stage-replay-button {
+    min-height: 42px;
+    padding: 9px 13px;
+    font-size: 12px;
+  }
   .svg-object { width: 280px; height: 280px; top: calc(50% - 140px); left: calc(50% - 140px); }
   .copy-object { left: 10%; width: 80%; }
   .cards-object { left: 8%; width: 84%; }
