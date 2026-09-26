@@ -10,6 +10,7 @@ const replayReverseButton = document.querySelector("#replayReverse");
 
 const DURATION = 1800;
 const EASING = "cubic-bezier(.2,.82,.24,1)";
+let pendingTarget = null;
 
 const placement = createPlacementController(svgObject, {
   initial: "background",
@@ -45,28 +46,47 @@ const placement = createPlacementController(svgObject, {
 });
 
 function updateButtons() {
-  stateBackground.classList.toggle("is-active", placement.current === "background");
-  stateInline.classList.toggle("is-active", placement.current === "inline");
+  const backgroundActive = placement.current === "background";
+  const inlineActive = placement.current === "inline";
+
+  stateBackground.classList.toggle("is-active", backgroundActive);
+  stateInline.classList.toggle("is-active", inlineActive);
+  stateBackground.setAttribute("aria-pressed", String(backgroundActive));
+  stateInline.setAttribute("aria-pressed", String(inlineActive));
 }
 
 async function goTo(name, { animate = true } = {}) {
-  if (placement.running) return;
+  if (placement.running) {
+    pendingTarget = { name, animate };
+    return;
+  }
+
+  if (placement.current === name) {
+    updateButtons();
+    return;
+  }
 
   stage.dataset.mode = name === "inline" ? "inline" : "background";
 
-  if (animate) {
-    stage.dataset.transitioning = "true";
-
-    try {
+  try {
+    if (animate) {
+      stage.dataset.transitioning = "true";
       await placement.transition(name);
-    } finally {
-      delete stage.dataset.transitioning;
+    } else {
+      placement.apply(name);
     }
-  } else {
-    placement.apply(name);
-  }
+  } finally {
+    delete stage.dataset.transitioning;
+    updateButtons();
 
-  updateButtons();
+    if (pendingTarget && pendingTarget.name !== placement.current) {
+      const queued = pendingTarget;
+      pendingTarget = null;
+      void goTo(queued.name, { animate: queued.animate });
+    } else {
+      pendingTarget = null;
+    }
+  }
 }
 
 async function replay(from, to) {

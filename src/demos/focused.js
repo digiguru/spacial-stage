@@ -7,9 +7,9 @@ function activate(button, selector) {
 }
 
 function animateObject(frames, options = {}) {
-  if (!object?.animate) return;
+  if (!object?.animate) return null;
   object.getAnimations().forEach((animation) => animation.cancel());
-  object.animate(frames, {
+  return object.animate(frames, {
     duration: 760,
     easing: "cubic-bezier(.2,.82,.24,1)",
     fill: "forwards",
@@ -17,93 +17,275 @@ function animateObject(frames, options = {}) {
   });
 }
 
-if (demo === "animations") {
-  let preset = "slide-fade";
-  const buttons = [...document.querySelectorAll("[data-preset]")];
+function createVisualStateNavigator({
+  initial,
+  buttons,
+  selector,
+  apply,
+  transition
+}) {
+  let current = initial;
+  let running = false;
+  let pending = null;
 
-  function run() {
-    const frames = {
-      "slide-fade": [
-        { transform: "translate3d(-140px, 70px, 0) scale(.82)", opacity: 0 },
-        { transform: "translate3d(0, 0, 0) scale(1)", opacity: 1 }
-      ],
-      reveal: [
-        { clipPath: "inset(0 100% 0 0)", transform: "translate3d(0,0,0)", opacity: 1 },
-        { clipPath: "inset(0 0 0 0)", transform: "translate3d(0,0,0)", opacity: 1 }
-      ],
-      "focus-collapse": [
-        { filter: "blur(18px) saturate(.72)", transform: "scale(.2,.92)", opacity: .45 },
-        { filter: "blur(0) saturate(1)", transform: "scale(1,1)", opacity: 1 }
-      ]
-    }[preset];
-    animateObject(frames);
+  function sync(target = current) {
+    const active = buttons.find((button) =>
+      button.dataset.state === target || button.dataset.depth === target
+    );
+    activate(active, selector);
+    buttons.forEach((button) =>
+      button.setAttribute("aria-pressed", String(button === active))
+    );
   }
 
-  buttons.forEach((button) => button.addEventListener("click", () => {
-    preset = button.dataset.preset;
-    activate(button, "[data-preset]");
-    run();
-  }));
-  replay?.addEventListener("click", run);
-  run();
+  async function go(next, { animate = true } = {}) {
+    if (!next) return;
+
+    if (running) {
+      pending = next;
+      return;
+    }
+
+    if (next === current) {
+      sync();
+      return;
+    }
+
+    running = true;
+    sync(next);
+
+    try {
+      if (animate) await transition(current, next);
+      else await apply(next);
+      current = next;
+    } finally {
+      running = false;
+      sync();
+
+      if (pending && pending !== current) {
+        const queued = pending;
+        pending = null;
+        void go(queued);
+      } else {
+        pending = null;
+      }
+    }
+  }
+
+  apply(initial);
+  sync();
+
+  return { go };
+}
+
+if (demo === "animations") {
+  let preset = "slide-fade";
+  let state = "two";
+  let running = false;
+  let pending = null;
+  const presetButtons = [...document.querySelectorAll("[data-preset]")];
+  const stateButtons = [...document.querySelectorAll("[data-motion-state]")];
+
+  const frames = {
+    "slide-fade": {
+      one: {
+        transform: "translate3d(-140px, 70px, 0) scale(.82)",
+        opacity: "0",
+        clipPath: "inset(0 0 0 0)",
+        filter: "blur(0) saturate(1)"
+      },
+      two: {
+        transform: "translate3d(0, 0, 0) scale(1)",
+        opacity: "1",
+        clipPath: "inset(0 0 0 0)",
+        filter: "blur(0) saturate(1)"
+      }
+    },
+    reveal: {
+      one: {
+        clipPath: "inset(0 100% 0 0)",
+        transform: "translate3d(0,0,0)",
+        opacity: "1",
+        filter: "blur(0) saturate(1)"
+      },
+      two: {
+        clipPath: "inset(0 0 0 0)",
+        transform: "translate3d(0,0,0)",
+        opacity: "1",
+        filter: "blur(0) saturate(1)"
+      }
+    },
+    "focus-collapse": {
+      one: {
+        filter: "blur(18px) saturate(.72)",
+        transform: "scale(.2,.92)",
+        opacity: "0.45",
+        clipPath: "inset(0 0 0 0)"
+      },
+      two: {
+        filter: "blur(0) saturate(1)",
+        transform: "scale(1,1)",
+        opacity: "1",
+        clipPath: "inset(0 0 0 0)"
+      }
+    }
+  };
+
+  function syncStateButtons(target = state) {
+    const active = stateButtons.find(
+      (button) => button.dataset.motionState === target
+    );
+    activate(active, "[data-motion-state]");
+    stateButtons.forEach((button) =>
+      button.setAttribute("aria-pressed", String(button === active))
+    );
+  }
+
+  function applyState(name) {
+    object.getAnimations().forEach((animation) => animation.cancel());
+    Object.assign(object.style, frames[preset][name]);
+  }
+
+  async function goState(next, { animate = true } = {}) {
+    if (running) {
+      pending = next;
+      return;
+    }
+    if (next === state) {
+      syncStateButtons();
+      return;
+    }
+
+    running = true;
+    syncStateButtons(next);
+
+    try {
+      if (!animate) {
+        applyState(next);
+      } else {
+        Object.assign(object.style, frames[preset][next]);
+        const animation = animateObject(
+          [frames[preset][state], frames[preset][next]]
+        );
+        try {
+          await animation?.finished;
+        } catch {}
+      }
+      state = next;
+    } finally {
+      running = false;
+      syncStateButtons();
+
+      if (pending && pending !== state) {
+        const queued = pending;
+        pending = null;
+        void goState(queued);
+      } else {
+        pending = null;
+      }
+    }
+  }
+
+  presetButtons.forEach((button) =>
+    button.addEventListener("click", () => {
+      preset = button.dataset.preset;
+      activate(button, "[data-preset]");
+      applyState(state);
+    })
+  );
+
+  stateButtons.forEach((button) =>
+    button.addEventListener("click", () =>
+      void goState(button.dataset.motionState)
+    )
+  );
+
+  replay?.addEventListener("click", async () => {
+    await goState("one", { animate: false });
+    requestAnimationFrame(() =>
+      requestAnimationFrame(() => void goState("two"))
+    );
+  });
+
+  applyState(state);
+  syncStateButtons();
 }
 
 if (demo === "geometry") {
-  let state = "a";
   const buttons = [...document.querySelectorAll("[data-state]")];
   const states = {
     a: { left: "8%", top: "13%", width: "190px", transform: "rotateZ(-12deg) scale(.92)" },
     b: { left: "58%", top: "47%", width: "300px", transform: "rotateZ(24deg) scale(1.06)" }
   };
 
-  function set(next, animate = true) {
-    const previous = state;
-    state = next;
-    const target = states[next];
-    const from = states[previous];
-    activate(buttons.find((button) => button.dataset.state === next), "[data-state]");
-
-    if (!animate || !object?.animate) {
-      Object.assign(object.style, target);
-      return;
+  const navigator = createVisualStateNavigator({
+    initial: "a",
+    buttons,
+    selector: "[data-state]",
+    apply(name) {
+      Object.assign(object.style, states[name]);
+    },
+    async transition(from, to) {
+      Object.assign(object.style, states[to]);
+      const animation = animateObject(
+        [
+          {
+            left: states[from].left,
+            top: states[from].top,
+            width: states[from].width,
+            transform: states[from].transform
+          },
+          {
+            left: states[to].left,
+            top: states[to].top,
+            width: states[to].width,
+            transform: states[to].transform
+          }
+        ],
+        { duration: 820 }
+      );
+      try {
+        await animation?.finished;
+      } catch {}
     }
-
-    Object.assign(object.style, target);
-    object.animate(
-      [
-        { left: from.left, top: from.top, width: from.width, transform: from.transform },
-        { left: target.left, top: target.top, width: target.width, transform: target.transform }
-      ],
-      { duration: 820, easing: "cubic-bezier(.2,.82,.24,1)", fill: "both" }
-    );
-  }
-
-  buttons.forEach((button) => button.addEventListener("click", () => set(button.dataset.state)));
-  replay?.addEventListener("click", () => {
-    set("a", false);
-    requestAnimationFrame(() => requestAnimationFrame(() => set("b", true)));
   });
-  set("a", false);
+
+  buttons.forEach((button) =>
+    button.addEventListener("click", () =>
+      void navigator.go(button.dataset.state)
+    )
+  );
+
+  replay?.addEventListener("click", async () => {
+    await navigator.go("a", { animate: false });
+    requestAnimationFrame(() =>
+      requestAnimationFrame(() => void navigator.go("b"))
+    );
+  });
 }
 
 if (demo === "layout") {
   let layout = "overlay";
+  let state = "two";
+  let running = false;
+  let pending = null;
   const content = document.querySelector("#layoutContent");
-  const buttons = [...document.querySelectorAll("[data-layout]")];
+  const layoutButtons = [...document.querySelectorAll("[data-layout]")];
+  const stateButtons = [...document.querySelectorAll("[data-motion-state]")];
 
-  function run() {
-    object.getAnimations().forEach((animation) => animation.cancel());
-    content.getAnimations().forEach((animation) => animation.cancel());
+  const objectStates = {
+    one: {
+      transform: "translate3d(-105%,0,0)",
+      opacity: "0.4"
+    },
+    two: {
+      transform: "translate3d(0,0,0)",
+      opacity: "1"
+    }
+  };
 
-    object.animate(
-      [
-        { transform: "translate3d(-105%,0,0)", opacity: .4 },
-        { transform: "translate3d(0,0,0)", opacity: 1 }
-      ],
-      { duration: 720, easing: "cubic-bezier(.2,.82,.24,1)", fill: "both" }
-    );
-
-    const frames = {
+  function contentFrames() {
+    return {
       overlay: [
         { transform: "translate3d(0,0,0)", opacity: 1, filter: "blur(0)" },
         { transform: "translate3d(0,0,0)", opacity: 1, filter: "blur(0)" }
@@ -124,68 +306,192 @@ if (demo === "layout") {
         { transform: "translate3d(0,0,0) scale(1)", opacity: 1 }
       ]
     }[layout];
-
-    content.animate(frames, { duration: 720, easing: "cubic-bezier(.2,.82,.24,1)", fill: "both" });
   }
 
-  buttons.forEach((button) => button.addEventListener("click", () => {
-    layout = button.dataset.layout;
-    activate(button, "[data-layout]");
-    run();
-  }));
-  replay?.addEventListener("click", run);
-  run();
-}
-
-if (demo === "depth") {
-  let depth = "blur";
-  const buttons = [...document.querySelectorAll("[data-depth]")];
-
-  function apply(next) {
-    depth = next;
-    activate(buttons.find((button) => button.dataset.depth === next), "[data-depth]");
-    animateObject(
-      depth === "blur"
-        ? [
-            { filter: "blur(0) saturate(1)", opacity: 1 },
-            { filter: "blur(14px) saturate(.82)", opacity: .34 }
-          ]
-        : [
-            { filter: "blur(14px) saturate(.82)", opacity: .34 },
-            { filter: "blur(0) saturate(1)", opacity: 1 }
-          ]
+  function syncStateButtons(target = state) {
+    const active = stateButtons.find(
+      (button) => button.dataset.motionState === target
+    );
+    activate(active, "[data-motion-state]");
+    stateButtons.forEach((button) =>
+      button.setAttribute("aria-pressed", String(button === active))
     );
   }
 
-  buttons.forEach((button) => button.addEventListener("click", () => apply(button.dataset.depth)));
-  replay?.addEventListener("click", () => apply(depth === "blur" ? "focus" : "blur"));
-  apply("blur");
+  function applyState(name) {
+    object.getAnimations().forEach((animation) => animation.cancel());
+    Object.assign(object.style, objectStates[name]);
+  }
+
+  async function goState(next, { animate = true } = {}) {
+    if (running) {
+      pending = next;
+      return;
+    }
+    if (next === state) {
+      syncStateButtons();
+      return;
+    }
+
+    running = true;
+    syncStateButtons(next);
+
+    try {
+      if (!animate) {
+        applyState(next);
+      } else {
+        Object.assign(object.style, objectStates[next]);
+        const objectAnimation = animateObject(
+          [objectStates[state], objectStates[next]],
+          { duration: 720 }
+        );
+        const companionAnimation = content.animate(
+          contentFrames(),
+          {
+            duration: 720,
+            easing: "cubic-bezier(.2,.82,.24,1)",
+            fill: "both"
+          }
+        );
+
+        try {
+          await Promise.all([
+            objectAnimation?.finished,
+            companionAnimation.finished
+          ]);
+        } catch {}
+      }
+      state = next;
+    } finally {
+      running = false;
+      syncStateButtons();
+
+      if (pending && pending !== state) {
+        const queued = pending;
+        pending = null;
+        void goState(queued);
+      } else {
+        pending = null;
+      }
+    }
+  }
+
+  layoutButtons.forEach((button) =>
+    button.addEventListener("click", async () => {
+      layout = button.dataset.layout;
+      activate(button, "[data-layout]");
+
+      await goState("one", { animate: false });
+      requestAnimationFrame(() =>
+        requestAnimationFrame(() => void goState("two"))
+      );
+    })
+  );
+
+  stateButtons.forEach((button) =>
+    button.addEventListener("click", () =>
+      void goState(button.dataset.motionState)
+    )
+  );
+
+  replay?.addEventListener("click", async () => {
+    await goState("one", { animate: false });
+    requestAnimationFrame(() =>
+      requestAnimationFrame(() => void goState("two"))
+    );
+  });
+
+  applyState(state);
+  syncStateButtons();
+}
+
+if (demo === "depth") {
+  const buttons = [...document.querySelectorAll("[data-depth]")];
+  const states = {
+    blur: {
+      filter: "blur(14px) saturate(.82)",
+      opacity: "0.34",
+      transform: "scale(.96)"
+    },
+    focus: {
+      filter: "blur(0px) saturate(1)",
+      opacity: "1",
+      transform: "scale(1)"
+    }
+  };
+
+  const navigator = createVisualStateNavigator({
+    initial: "blur",
+    buttons,
+    selector: "[data-depth]",
+    apply(name) {
+      Object.assign(object.style, states[name]);
+    },
+    async transition(from, to) {
+      Object.assign(object.style, states[to]);
+      const animation = animateObject(
+        [states[from], states[to]],
+        { duration: 760 }
+      );
+      try {
+        await animation?.finished;
+      } catch {}
+    }
+  });
+
+  buttons.forEach((button) =>
+    button.addEventListener("click", () =>
+      void navigator.go(button.dataset.depth)
+    )
+  );
+
+  replay?.addEventListener("click", () =>
+    void navigator.go(
+      buttons.find((button) => button.classList.contains("is-active"))
+        ?.dataset.depth === "blur"
+        ? "focus"
+        : "blur"
+    )
+  );
 }
 
 if (demo === "3d") {
-  let state = "front";
   const buttons = [...document.querySelectorAll("[data-state]")];
   const states = {
     front: "perspective(850px) translate3d(0,0,0) rotateX(0deg) rotateY(0deg) rotateZ(0deg) scale(1)",
     tilt: "perspective(650px) translate3d(0,-12px,110px) rotateX(-18deg) rotateY(32deg) rotateZ(7deg) scale(1.04)"
   };
 
-  function set(next, animate = true) {
-    const from = states[state];
-    const to = states[next];
-    state = next;
-    activate(buttons.find((button) => button.dataset.state === next), "[data-state]");
-    if (!animate) {
-      object.style.transform = to;
-      return;
+  const navigator = createVisualStateNavigator({
+    initial: "front",
+    buttons,
+    selector: "[data-state]",
+    apply(name) {
+      object.style.transform = states[name];
+    },
+    async transition(from, to) {
+      object.style.transform = states[to];
+      const animation = animateObject(
+        [{ transform: states[from] }, { transform: states[to] }],
+        { duration: 900 }
+      );
+      try {
+        await animation?.finished;
+      } catch {}
     }
-    animateObject([{ transform: from }, { transform: to }], { duration: 900 });
-  }
-
-  buttons.forEach((button) => button.addEventListener("click", () => set(button.dataset.state)));
-  replay?.addEventListener("click", () => {
-    set("front", false);
-    requestAnimationFrame(() => requestAnimationFrame(() => set("tilt", true)));
   });
-  set("front", false);
+
+  buttons.forEach((button) =>
+    button.addEventListener("click", () =>
+      void navigator.go(button.dataset.state)
+    )
+  );
+
+  replay?.addEventListener("click", async () => {
+    await navigator.go("front", { animate: false });
+    requestAnimationFrame(() =>
+      requestAnimationFrame(() => void navigator.go("tilt"))
+    );
+  });
 }
+

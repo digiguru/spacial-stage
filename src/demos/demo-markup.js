@@ -591,27 +591,38 @@ await animateBetweenStates(object, frame, a, b);`
   },
 
   "reduced-motion": {
-    note: "Same semantic destination, different presentation outcome.",
-    html: `<div id="object">
-  <strong>Same destination</strong>
-</div>`,
-    js: `import {
-  animateBetweenStates,
-  destinationFrame,
-  normaliseSpec,
-  prefersReducedMotion
-} from "@digiguru/spacial-stage";
+    note: "Both cards share the same semantic state. Full motion tweens to the selected destination; reduced motion commits that destination immediately.",
+    html: `<button data-state="one">State 1</button>
+<button data-state="two">State 2</button>
 
-const from = normaliseSpec({ positionX: -110 });
-const to = normaliseSpec({
-  animations: ["slide"],
-  positionX: 110
-});
+<div id="fullMotion">Same card</div>
+<div id="reducedMotion">Same card</div>`,
+    js: `const states = {
+  one: {
+    transform: "translateX(-110px) rotate(-25deg)",
+    opacity: "0.45"
+  },
+  two: {
+    transform: "translateX(110px) rotate(25deg)",
+    opacity: "1"
+  }
+};
 
-if (prefersReducedMotion()) {
-  Object.assign(object.style, destinationFrame(object, stage, to));
-} else {
-  await animateBetweenStates(object, stage, from, to);
+async function go(from, to) {
+  // Reduced-motion outcome: same target, no tween.
+  Object.assign(reducedMotion.style, states[to]);
+
+  const animation = fullMotion.animate(
+    [states[from], states[to]],
+    {
+      duration: 1600,
+      easing: "cubic-bezier(.2,.82,.24,1)",
+      fill: "both"
+    }
+  );
+
+  await animation.finished;
+  Object.assign(fullMotion.style, states[to]);
 }`
   }
 };

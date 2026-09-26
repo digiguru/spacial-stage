@@ -47,171 +47,390 @@ function prepareFrameworkObject(object) {
   captureNaturalSize(object);
 }
 
-if (demo === "easing") {
-  const rows = [...document.querySelectorAll("[data-easing]")];
+function createStateNavigator({
+  initial,
+  buttons,
+  selector,
+  apply,
+  transition
+}) {
+  let current = initial;
+  let running = false;
+  let pending = null;
 
-  function run() {
-    rows.forEach((row) => {
-      const runner = row.querySelector(".lab-runner");
-      const track = row.querySelector(".lab-track");
-      const distance = Math.max(0, track.clientWidth - 66);
-      runAnimation(
-        runner,
-        [
-          { transform: "translateX(0)" },
-          { transform: `translateX(${distance}px)` }
-        ],
-        { duration: 1800, easing: row.dataset.easing }
-      );
-    });
+  function syncButtons(target = current) {
+    const active = buttons.find(
+      (button) => button.dataset.stateTarget === target
+    );
+    activate(active, selector);
+    buttons.forEach((button) =>
+      button.setAttribute("aria-pressed", String(button === active))
+    );
   }
 
-  replay?.addEventListener("click", run);
-  run();
+  async function go(next, { animate = true } = {}) {
+    if (!next) return;
+
+    if (running) {
+      pending = next;
+      return;
+    }
+
+    if (next === current) {
+      syncButtons();
+      return;
+    }
+
+    running = true;
+    syncButtons(next);
+
+    try {
+      if (animate) {
+        await transition(current, next);
+      } else {
+        await apply(next);
+      }
+
+      current = next;
+    } finally {
+      running = false;
+      syncButtons();
+
+      if (pending && pending !== current) {
+        const queued = pending;
+        pending = null;
+        void go(queued);
+      } else {
+        pending = null;
+      }
+    }
+  }
+
+  function initialise() {
+    apply(initial);
+    syncButtons();
+  }
+
+  function reapply() {
+    apply(current);
+  }
+
+  initialise();
+
+  return {
+    go,
+    reapply,
+    get current() {
+      return current;
+    },
+    get running() {
+      return running;
+    }
+  };
+}
+
+if (demo === "easing") {
+  const rows = [...document.querySelectorAll("[data-easing]")];
+  const buttons = [...document.querySelectorAll("[data-state-target]")];
+
+  function transformFor(row, name) {
+    const distance = Math.max(0, row.querySelector(".lab-track").clientWidth - 66);
+    return name === "start" ? "translateX(0)" : `translateX(${distance}px)`;
+  }
+
+  const navigator = createStateNavigator({
+    initial: "start",
+    buttons,
+    selector: "[data-state-target]",
+    apply(name) {
+      rows.forEach((row) => {
+        row.querySelector(".lab-runner").style.transform = transformFor(row, name);
+      });
+    },
+    async transition(from, to) {
+      const animations = rows.map((row) => {
+        const runner = row.querySelector(".lab-runner");
+        const target = transformFor(row, to);
+        runner.style.transform = target;
+
+        return runAnimation(
+          runner,
+          [
+            { transform: transformFor(row, from) },
+            { transform: target }
+          ],
+          { duration: 1800, easing: row.dataset.easing }
+        );
+      });
+
+      await Promise.all(
+        animations.map(async (animation) => {
+          try {
+            await animation?.finished;
+          } catch {}
+        })
+      );
+    }
+  });
+
+  buttons.forEach((button) =>
+    button.addEventListener("click", () =>
+      void navigator.go(button.dataset.stateTarget)
+    )
+  );
+
+  replay?.addEventListener("click", async () => {
+    await navigator.go("start", { animate: false });
+    await nextFrame();
+    await navigator.go("end");
+  });
 }
 
 if (demo === "speed") {
   const rows = [...document.querySelectorAll("[data-duration]")];
+  const buttons = [...document.querySelectorAll("[data-state-target]")];
 
-  function run() {
-    rows.forEach((row) => {
-      const runner = row.querySelector(".lab-runner");
-      const track = row.querySelector(".lab-track");
-      const distance = Math.max(0, track.clientWidth - 66);
-      runAnimation(
-        runner,
-        [
-          { transform: "translateX(0)" },
-          { transform: `translateX(${distance}px)` }
-        ],
-        {
-          duration: Number(row.dataset.duration),
-          easing: "cubic-bezier(.2,.82,.24,1)"
-        }
-      );
-    });
+  function transformFor(row, name) {
+    const distance = Math.max(0, row.querySelector(".lab-track").clientWidth - 66);
+    return name === "start" ? "translateX(0)" : `translateX(${distance}px)`;
   }
 
-  replay?.addEventListener("click", run);
-  run();
+  const navigator = createStateNavigator({
+    initial: "start",
+    buttons,
+    selector: "[data-state-target]",
+    apply(name) {
+      rows.forEach((row) => {
+        row.querySelector(".lab-runner").style.transform = transformFor(row, name);
+      });
+    },
+    async transition(from, to) {
+      const animations = rows.map((row) => {
+        const runner = row.querySelector(".lab-runner");
+        const target = transformFor(row, to);
+        runner.style.transform = target;
+
+        return runAnimation(
+          runner,
+          [
+            { transform: transformFor(row, from) },
+            { transform: target }
+          ],
+          {
+            duration: Number(row.dataset.duration),
+            easing: "cubic-bezier(.2,.82,.24,1)"
+          }
+        );
+      });
+
+      await Promise.all(
+        animations.map(async (animation) => {
+          try {
+            await animation?.finished;
+          } catch {}
+        })
+      );
+    }
+  });
+
+  buttons.forEach((button) =>
+    button.addEventListener("click", () =>
+      void navigator.go(button.dataset.stateTarget)
+    )
+  );
+
+  replay?.addEventListener("click", async () => {
+    await navigator.go("start", { animate: false });
+    await nextFrame();
+    await navigator.go("end");
+  });
 }
 
 if (demo === "blur-focus") {
   const blurred = document.querySelector("#blurredObject");
   const focused = document.querySelector("#focusedObject");
+  const buttons = [...document.querySelectorAll("[data-state-target]")];
 
-  function run() {
-    runAnimation(
-      blurred,
-      [
-        { filter: "blur(0px) saturate(1)", opacity: 1, transform: "scale(1)" },
-        { filter: "blur(16px) saturate(.78)", opacity: .32, transform: "scale(.96)" }
-      ],
-      { duration: 1600 }
-    );
-    runAnimation(
-      focused,
-      [
-        { filter: "blur(16px) saturate(.78)", opacity: .32, transform: "scale(.96)" },
-        { filter: "blur(0px) saturate(1)", opacity: 1, transform: "scale(1)" }
-      ],
-      { duration: 1600 }
-    );
-  }
+  const focusedStyle = {
+    filter: "blur(0px) saturate(1)",
+    opacity: "1",
+    transform: "scale(1)"
+  };
+  const blurredStyle = {
+    filter: "blur(16px) saturate(.78)",
+    opacity: "0.32",
+    transform: "scale(.96)"
+  };
 
-  replay?.addEventListener("click", run);
-  run();
+  const states = {
+    one: {
+      left: focusedStyle,
+      right: blurredStyle
+    },
+    two: {
+      left: blurredStyle,
+      right: focusedStyle
+    }
+  };
+
+  const navigator = createStateNavigator({
+    initial: "one",
+    buttons,
+    selector: "[data-state-target]",
+    apply(name) {
+      Object.assign(blurred.style, states[name].left);
+      Object.assign(focused.style, states[name].right);
+    },
+    async transition(from, to) {
+      Object.assign(blurred.style, states[to].left);
+      Object.assign(focused.style, states[to].right);
+
+      const animations = [
+        runAnimation(
+          blurred,
+          [states[from].left, states[to].left],
+          { duration: 1600 }
+        ),
+        runAnimation(
+          focused,
+          [states[from].right, states[to].right],
+          { duration: 1600 }
+        )
+      ];
+
+      await Promise.all(
+        animations.map(async (animation) => {
+          try {
+            await animation?.finished;
+          } catch {}
+        })
+      );
+    }
+  });
+
+  buttons.forEach((button) =>
+    button.addEventListener("click", () =>
+      void navigator.go(button.dataset.stateTarget)
+    )
+  );
+
+  replay?.addEventListener("click", async () => {
+    await navigator.go("one", { animate: false });
+    await nextFrame();
+    await navigator.go("two");
+  });
 }
 
 if (demo === "size") {
   const object = stageObject();
   prepareFrameworkObject(object);
+  const buttons = [...document.querySelectorAll("[data-state-target]")];
 
-  const small = normaliseSpec({
-    animations: ["slide"],
-    horizontalAnchor: "center",
-    verticalAnchor: "center",
-    sizeMode: "absolute",
-    sizeWidth: 110,
-    sizeHeight: 110,
-    duration: 1500
-  });
-  const large = normaliseSpec({
-    ...small,
+  const states = {
+    small: normaliseSpec({
+      animations: ["slide"],
+      horizontalAnchor: "center",
+      verticalAnchor: "center",
+      sizeMode: "absolute",
+      sizeWidth: 110,
+      sizeHeight: 110,
+      duration: 1500
+    }),
+    large: null
+  };
+  states.large = normaliseSpec({
+    ...states.small,
     sizeWidth: 300,
     sizeHeight: 170
   });
 
-  async function run() {
-    applyFrame(object, destinationFrame(object, stage, small));
-    await nextFrame();
-    await animateBetweenStates(object, stage, small, large);
-  }
+  const navigator = createStateNavigator({
+    initial: "small",
+    buttons,
+    selector: "[data-state-target]",
+    apply(name) {
+      applyFrame(object, destinationFrame(object, stage, states[name]));
+    },
+    transition(from, to) {
+      return animateBetweenStates(object, stage, states[from], states[to]);
+    }
+  });
 
-  replay?.addEventListener("click", () => void run());
-  void run();
+  buttons.forEach((button) =>
+    button.addEventListener("click", () =>
+      void navigator.go(button.dataset.stateTarget)
+    )
+  );
+
+  replay?.addEventListener("click", async () => {
+    await navigator.go("small", { animate: false });
+    await nextFrame();
+    await navigator.go("large");
+  });
 }
 
 if (demo === "rotation") {
   const object = stageObject();
   prepareFrameworkObject(object);
-  const buttons = [...document.querySelectorAll("[data-angle]")];
-  let current = 0;
+  const buttons = [...document.querySelectorAll("[data-state-target]")];
 
-  async function go(angle) {
-    const from = normaliseSpec({
+  function spec(value) {
+    return normaliseSpec({
       animations: ["slide"],
       horizontalAnchor: "center",
       verticalAnchor: "center",
-      rotateZ: current,
+      rotateZ: Number(value),
       duration: 1400
     });
-    const to = normaliseSpec({ ...from, rotateZ: angle });
-    current = angle;
-    activate(buttons.find((button) => Number(button.dataset.angle) === angle), "[data-angle]");
-    await animateBetweenStates(object, stage, from, to);
   }
 
+  const navigator = createStateNavigator({
+    initial: "0",
+    buttons,
+    selector: "[data-state-target]",
+    apply(name) {
+      applyFrame(object, destinationFrame(object, stage, spec(name)));
+    },
+    transition(from, to) {
+      return animateBetweenStates(object, stage, spec(from), spec(to));
+    }
+  });
+
   buttons.forEach((button) =>
-    button.addEventListener("click", () => void go(Number(button.dataset.angle)))
+    button.addEventListener("click", () =>
+      void navigator.go(button.dataset.stateTarget)
+    )
   );
+
   replay?.addEventListener("click", async () => {
-    current = -90;
-    applyFrame(
-      object,
-      destinationFrame(
-        object,
-        stage,
-        normaliseSpec({
-          horizontalAnchor: "center",
-          verticalAnchor: "center",
-          rotateZ: -90
-        })
-      )
-    );
+    await navigator.go("-90", { animate: false });
     await nextFrame();
-    await go(270);
+    await navigator.go("180");
   });
 }
 
 if (demo === "absolute-absolute") {
   const object = stageObject();
   prepareFrameworkObject(object);
+  const buttons = [...document.querySelectorAll("[data-state-target]")];
 
-  const a = normaliseSpec({
-    animations: ["slide"],
-    horizontalAnchor: "left",
-    verticalAnchor: "top",
-    positionX: 28,
-    positionY: 28,
-    sizeMode: "absolute",
-    sizeWidth: 120,
-    sizeHeight: 120,
-    rotateZ: -12,
-    duration: 1800
-  });
-  const b = normaliseSpec({
-    ...a,
+  const states = {
+    a: normaliseSpec({
+      animations: ["slide"],
+      horizontalAnchor: "left",
+      verticalAnchor: "top",
+      positionX: 28,
+      positionY: 28,
+      sizeMode: "absolute",
+      sizeWidth: 120,
+      sizeHeight: 120,
+      rotateZ: -12,
+      duration: 1800
+    }),
+    b: null
+  };
+  states.b = normaliseSpec({
+    ...states.a,
     horizontalAnchor: "right",
     verticalAnchor: "bottom",
     positionX: -30,
@@ -221,35 +440,41 @@ if (demo === "absolute-absolute") {
     rotateZ: 24
   });
 
-  async function forward() {
-    applyFrame(object, destinationFrame(object, stage, a));
-    await nextFrame();
-    await animateBetweenStates(object, stage, a, b);
-  }
+  const navigator = createStateNavigator({
+    initial: "a",
+    buttons,
+    selector: "[data-state-target]",
+    apply(name) {
+      applyFrame(object, destinationFrame(object, stage, states[name]));
+    },
+    transition(from, to) {
+      return animateBetweenStates(object, stage, states[from], states[to]);
+    }
+  });
 
-  async function reverse() {
-    applyFrame(object, destinationFrame(object, stage, b));
-    await nextFrame();
-    await animateBetweenStates(object, stage, b, a);
-  }
+  buttons.forEach((button) =>
+    button.addEventListener("click", () =>
+      void navigator.go(button.dataset.stateTarget)
+    )
+  );
 
-  document.querySelector("[data-forward]")?.addEventListener("click", () => void forward());
-  document.querySelector("[data-reverse]")?.addEventListener("click", () => void reverse());
-  replay?.addEventListener("click", () => void forward());
-  void forward();
+  replay?.addEventListener("click", async () => {
+    await navigator.go("a", { animate: false });
+    await nextFrame();
+    await navigator.go("b");
+  });
 }
 
 if (demo === "alignment") {
   const object = stageObject();
   prepareFrameworkObject(object);
-  const buttons = [...document.querySelectorAll("[data-alignment]")];
+  const buttons = [...document.querySelectorAll("[data-state-target]")];
   const placements = {
     top: { horizontalAnchor: "center", verticalAnchor: "top", positionX: 0, positionY: 28 },
     right: { horizontalAnchor: "right", verticalAnchor: "center", positionX: -28, positionY: 0 },
     bottom: { horizontalAnchor: "center", verticalAnchor: "bottom", positionX: 0, positionY: -28 },
     left: { horizontalAnchor: "left", verticalAnchor: "center", positionX: 28, positionY: 0 }
   };
-  let current = "top";
 
   function spec(name) {
     return normaliseSpec({
@@ -262,68 +487,147 @@ if (demo === "alignment") {
     });
   }
 
-  async function go(name) {
-    const from = spec(current);
-    const to = spec(name);
-    current = name;
-    activate(buttons.find((button) => button.dataset.alignment === name), "[data-alignment]");
-    await animateBetweenStates(object, stage, from, to);
-  }
-
-  buttons.forEach((button) =>
-    button.addEventListener("click", () => void go(button.dataset.alignment))
-  );
-
-  replay?.addEventListener("click", async () => {
-    current = "top";
-    applyFrame(object, destinationFrame(object, stage, spec("top")));
-    await nextFrame();
-    for (const name of ["right", "bottom", "left", "top"]) {
-      await go(name);
+  const navigator = createStateNavigator({
+    initial: "top",
+    buttons,
+    selector: "[data-state-target]",
+    apply(name) {
+      applyFrame(object, destinationFrame(object, stage, spec(name)));
+    },
+    transition(from, to) {
+      return animateBetweenStates(object, stage, spec(from), spec(to));
     }
   });
 
-  applyFrame(object, destinationFrame(object, stage, spec("top")));
+  buttons.forEach((button) =>
+    button.addEventListener("click", () =>
+      void navigator.go(button.dataset.stateTarget)
+    )
+  );
+
+  replay?.addEventListener("click", async () => {
+    await navigator.go("top", { animate: false });
+    await nextFrame();
+
+    for (const name of ["right", "bottom", "left", "top"]) {
+      await navigator.go(name);
+    }
+  });
 }
 
 if (demo === "spacing") {
   const paddingBox = document.querySelector("#paddingBox");
   const marginInner = document.querySelector("#marginInner");
+  const buttons = [...document.querySelectorAll("[data-state-target]")];
 
-  function run() {
-    paddingBox.getAnimations?.().forEach((animation) => animation.cancel());
-    marginInner.getAnimations?.().forEach((animation) => animation.cancel());
+  const states = {
+    compact: {
+      padding: "8px",
+      margin: "8px"
+    },
+    expanded: {
+      padding: "56px 28px",
+      margin: "56px 28px"
+    }
+  };
 
-    paddingBox.animate(
-      [{ padding: "8px" }, { padding: "56px 28px" }],
-      { duration: 1800, easing: "cubic-bezier(.2,.82,.24,1)", fill: "both" }
-    );
-    marginInner.animate(
-      [{ margin: "8px" }, { margin: "56px 28px" }],
-      { duration: 1800, easing: "cubic-bezier(.2,.82,.24,1)", fill: "both" }
-    );
-  }
+  const navigator = createStateNavigator({
+    initial: "compact",
+    buttons,
+    selector: "[data-state-target]",
+    apply(name) {
+      paddingBox.style.padding = states[name].padding;
+      marginInner.style.margin = states[name].margin;
+    },
+    async transition(from, to) {
+      paddingBox.style.padding = states[to].padding;
+      marginInner.style.margin = states[to].margin;
 
-  replay?.addEventListener("click", run);
-  run();
+      const animations = [
+        runAnimation(
+          paddingBox,
+          [
+            { padding: states[from].padding },
+            { padding: states[to].padding }
+          ],
+          { duration: 1800 }
+        ),
+        runAnimation(
+          marginInner,
+          [
+            { margin: states[from].margin },
+            { margin: states[to].margin }
+          ],
+          { duration: 1800 }
+        )
+      ];
+
+      await Promise.all(
+        animations.map(async (animation) => {
+          try {
+            await animation?.finished;
+          } catch {}
+        })
+      );
+    }
+  });
+
+  buttons.forEach((button) =>
+    button.addEventListener("click", () =>
+      void navigator.go(button.dataset.stateTarget)
+    )
+  );
+
+  replay?.addEventListener("click", async () => {
+    await navigator.go("compact", { animate: false });
+    await nextFrame();
+    await navigator.go("expanded");
+  });
 }
 
 if (demo === "cube") {
   const cube = document.querySelector(".cube");
+  const buttons = [...document.querySelectorAll("[data-state-target]")];
+  const states = {
+    one: "rotateX(-18deg) rotateY(-25deg) rotateZ(0deg)",
+    two: "rotateX(342deg) rotateY(695deg) rotateZ(180deg)"
+  };
 
-  function run() {
-    runAnimation(
-      cube,
-      [
-        { transform: "rotateX(-18deg) rotateY(-25deg) rotateZ(0deg)" },
-        { transform: "rotateX(342deg) rotateY(695deg) rotateZ(180deg)" }
-      ],
-      { duration: 3600, easing: "cubic-bezier(.22,.75,.18,1)" }
-    );
-  }
+  const navigator = createStateNavigator({
+    initial: "one",
+    buttons,
+    selector: "[data-state-target]",
+    apply(name) {
+      cube.style.transform = states[name];
+    },
+    async transition(from, to) {
+      cube.style.transform = states[to];
+      const animation = runAnimation(
+        cube,
+        [
+          { transform: states[from] },
+          { transform: states[to] }
+        ],
+        { duration: 3600, easing: "cubic-bezier(.22,.75,.18,1)" }
+      );
 
-  replay?.addEventListener("click", run);
-  run();
+      try {
+        await animation?.finished;
+      } catch {}
+    }
+  });
+
+  buttons.forEach((button) =>
+    button.addEventListener("click", () =>
+      void navigator.go(button.dataset.stateTarget)
+    )
+  );
+
+  replay?.addEventListener("click", async () => {
+    await navigator.go("one", { animate: false });
+    await nextFrame();
+    await navigator.go("two");
+  });
 }
 
 if (demo === "parallax") {
@@ -367,10 +671,22 @@ if (demo === "parallax") {
 
 if (demo === "coverflow") {
   const covers = [...document.querySelectorAll(".cover")];
+  const stateButtons = [...document.querySelectorAll("[data-cover-state]")];
   let active = 2;
+
+  function syncStateButtons() {
+    const activeButton = stateButtons.find(
+      (button) => Number(button.dataset.coverState) === active
+    );
+    activate(activeButton, "[data-cover-state]");
+    stateButtons.forEach((button) =>
+      button.setAttribute("aria-pressed", String(button === activeButton))
+    );
+  }
 
   function layout(index, animate = true) {
     active = (index + covers.length) % covers.length;
+    syncStateButtons();
 
     covers.forEach((cover, coverIndex) => {
       const delta = coverIndex - active;
@@ -392,7 +708,13 @@ if (demo === "coverflow") {
       runAnimation(
         cover,
         [
-          { transform: getComputedStyle(cover).transform === "none" ? cover.style.transform || transform : getComputedStyle(cover).transform, opacity: getComputedStyle(cover).opacity },
+          {
+            transform:
+              getComputedStyle(cover).transform === "none"
+                ? cover.style.transform || transform
+                : getComputedStyle(cover).transform,
+            opacity: getComputedStyle(cover).opacity
+          },
           { transform, opacity }
         ],
         { duration: 900 }
@@ -403,79 +725,186 @@ if (demo === "coverflow") {
     });
   }
 
-  document.querySelector("[data-prev]")?.addEventListener("click", () => layout(active - 1));
-  document.querySelector("[data-next]")?.addEventListener("click", () => layout(active + 1));
+  stateButtons.forEach((button) =>
+    button.addEventListener("click", () =>
+      layout(Number(button.dataset.coverState))
+    )
+  );
+
+  covers.forEach((cover, index) =>
+    cover.addEventListener("click", () => layout(index))
+  );
+
+  document.querySelector("[data-prev]")?.addEventListener(
+    "click",
+    () => layout(active - 1)
+  );
+  document.querySelector("[data-next]")?.addEventListener(
+    "click",
+    () => layout(active + 1)
+  );
+
   replay?.addEventListener("click", async () => {
     layout(0, false);
     await nextFrame();
+
     for (let index = 1; index < covers.length; index += 1) {
       layout(index);
       await new Promise((resolve) => setTimeout(resolve, 780));
     }
   });
+
   layout(active, false);
 }
 
 if (demo === "stagger") {
   const cards = [...document.querySelectorAll(".stagger-card")];
+  const buttons = [...document.querySelectorAll("[data-state-target]")];
+  const states = {
+    hidden: {
+      transform: "translateY(70px) rotate(-8deg)",
+      opacity: "0"
+    },
+    visible: {
+      transform: "translateY(0) rotate(0deg)",
+      opacity: "1"
+    }
+  };
 
-  function run() {
-    cards.forEach((card, index) => {
-      runAnimation(
-        card,
-        [
-          { transform: "translateY(70px) rotate(-8deg)", opacity: 0 },
-          { transform: "translateY(0) rotate(0deg)", opacity: 1 }
-        ],
-        { duration: 760, delay: index * 120 }
+  const navigator = createStateNavigator({
+    initial: "visible",
+    buttons,
+    selector: "[data-state-target]",
+    apply(name) {
+      cards.forEach((card) => Object.assign(card.style, states[name]));
+    },
+    async transition(from, to) {
+      const animations = cards.map((card, index) => {
+        Object.assign(card.style, states[to]);
+        const delayIndex = to === "visible"
+          ? index
+          : cards.length - 1 - index;
+
+        return runAnimation(
+          card,
+          [states[from], states[to]],
+          { duration: 760, delay: delayIndex * 120 }
+        );
+      });
+
+      await Promise.all(
+        animations.map(async (animation) => {
+          try {
+            await animation?.finished;
+          } catch {}
+        })
       );
-    });
-  }
+    }
+  });
 
-  replay?.addEventListener("click", run);
-  run();
+  buttons.forEach((button) =>
+    button.addEventListener("click", () =>
+      void navigator.go(button.dataset.stateTarget)
+    )
+  );
+
+  replay?.addEventListener("click", async () => {
+    await navigator.go("hidden", { animate: false });
+    await nextFrame();
+    await navigator.go("visible");
+  });
 }
 
 if (demo === "reveal-collapse") {
   const revealCard = document.querySelector("#revealCard");
   const collapseCard = document.querySelector("#collapseCard");
+  const buttons = [...document.querySelectorAll("[data-state-target]")];
 
-  function run() {
-    runAnimation(
-      revealCard,
-      [
-        { clipPath: "inset(0 100% 0 0)" },
-        { clipPath: "inset(0 0 0 0)" }
-      ],
-      { duration: 1500 }
-    );
-    runAnimation(
-      collapseCard,
-      [
-        { transform: "scaleX(.08)", transformOrigin: "left center" },
-        { transform: "scaleX(1)", transformOrigin: "left center" }
-      ],
-      { duration: 1500 }
-    );
-  }
+  const states = {
+    closed: {
+      reveal: {
+        clipPath: "inset(0 100% 0 0)"
+      },
+      collapse: {
+        transform: "scaleX(.08)",
+        transformOrigin: "left center"
+      }
+    },
+    open: {
+      reveal: {
+        clipPath: "inset(0 0 0 0)"
+      },
+      collapse: {
+        transform: "scaleX(1)",
+        transformOrigin: "left center"
+      }
+    }
+  };
 
-  replay?.addEventListener("click", run);
-  run();
+  const navigator = createStateNavigator({
+    initial: "open",
+    buttons,
+    selector: "[data-state-target]",
+    apply(name) {
+      Object.assign(revealCard.style, states[name].reveal);
+      Object.assign(collapseCard.style, states[name].collapse);
+    },
+    async transition(from, to) {
+      Object.assign(revealCard.style, states[to].reveal);
+      Object.assign(collapseCard.style, states[to].collapse);
+
+      const animations = [
+        runAnimation(
+          revealCard,
+          [states[from].reveal, states[to].reveal],
+          { duration: 1500 }
+        ),
+        runAnimation(
+          collapseCard,
+          [states[from].collapse, states[to].collapse],
+          { duration: 1500 }
+        )
+      ];
+
+      await Promise.all(
+        animations.map(async (animation) => {
+          try {
+            await animation?.finished;
+          } catch {}
+        })
+      );
+    }
+  });
+
+  buttons.forEach((button) =>
+    button.addEventListener("click", () =>
+      void navigator.go(button.dataset.stateTarget)
+    )
+  );
+
+  replay?.addEventListener("click", async () => {
+    await navigator.go("closed", { animate: false });
+    await nextFrame();
+    await navigator.go("open");
+  });
 }
 
 if (demo === "responsive") {
   const frame = document.querySelector(".responsive-frame");
   const object = stageObject();
   prepareFrameworkObject(object);
+  const buttons = [...document.querySelectorAll("[data-state-target]")];
 
-  function spec(anchor) {
+  function spec(name) {
+    const first = name === "a";
+
     return normaliseSpec({
       animations: ["slide"],
-      horizontalAnchor: anchor === "left" ? "left" : "right",
-      verticalAnchor: anchor === "left" ? "top" : "bottom",
+      horizontalAnchor: first ? "left" : "right",
+      verticalAnchor: first ? "top" : "bottom",
       positionMode: "percent",
-      positionX: anchor === "left" ? 6 : -6,
-      positionY: anchor === "left" ? 8 : -8,
+      positionX: first ? 6 : -6,
+      positionY: first ? 8 : -8,
       sizeMode: "percent",
       sizeWidth: 24,
       sizeHeight: 24,
@@ -483,42 +912,92 @@ if (demo === "responsive") {
     });
   }
 
-  async function run() {
-    const a = spec("left");
-    const b = spec("right");
-    applyFrame(object, destinationFrame(object, frame, a));
-    await nextFrame();
-    await animateBetweenStates(object, frame, a, b);
-  }
+  const navigator = createStateNavigator({
+    initial: "a",
+    buttons,
+    selector: "[data-state-target]",
+    apply(name) {
+      applyFrame(object, destinationFrame(object, frame, spec(name)));
+    },
+    transition(from, to) {
+      return animateBetweenStates(object, frame, spec(from), spec(to));
+    }
+  });
 
-  replay?.addEventListener("click", () => void run());
-  window.addEventListener("resize", () => void run());
-  void run();
+  buttons.forEach((button) =>
+    button.addEventListener("click", () =>
+      void navigator.go(button.dataset.stateTarget)
+    )
+  );
+
+  replay?.addEventListener("click", async () => {
+    await navigator.go("a", { animate: false });
+    await nextFrame();
+    await navigator.go("b");
+  });
+
+  window.addEventListener("resize", () => {
+    if (!navigator.running) navigator.reapply();
+  });
 }
 
 if (demo === "reduced-motion") {
   const motion = document.querySelector("#motionObject");
   const reduced = document.querySelector("#reducedObject");
+  const buttons = [...document.querySelectorAll("[data-state-target]")];
 
-  function run() {
-    runAnimation(
-      motion,
-      [
-        { transform: "translateX(-110px) rotate(-25deg)", opacity: .2 },
-        { transform: "translateX(110px) rotate(25deg)", opacity: 1 }
-      ],
-      { duration: 1600 }
-    );
+  const states = {
+    one: {
+      transform: "translateX(-110px) rotate(-25deg)",
+      opacity: "0.45"
+    },
+    two: {
+      transform: "translateX(110px) rotate(25deg)",
+      opacity: "1"
+    }
+  };
 
-    reduced.getAnimations?.().forEach((animation) => animation.cancel());
-    reduced.style.transform = "translateX(-110px) rotate(0deg)";
-    reduced.style.opacity = ".2";
-    requestAnimationFrame(() => {
-      reduced.style.transform = "translateX(110px) rotate(0deg)";
-      reduced.style.opacity = "1";
-    });
+  function applyState(element, name) {
+    element.getAnimations?.().forEach((animation) => animation.cancel());
+    Object.assign(element.style, states[name]);
   }
 
-  replay?.addEventListener("click", run);
-  run();
+  const navigator = createStateNavigator({
+    initial: "one",
+    buttons,
+    selector: "[data-state-target]",
+    apply(name) {
+      applyState(motion, name);
+      applyState(reduced, name);
+    },
+    async transition(from, to) {
+      // Reduced motion resolves to the exact semantic destination immediately.
+      applyState(reduced, to);
+
+      const animation = runAnimation(
+        motion,
+        [states[from], states[to]],
+        { duration: 1600 }
+      );
+
+      try {
+        await animation.finished;
+      } catch {}
+
+      applyState(motion, to);
+    }
+  });
+
+  buttons.forEach((button) =>
+    button.addEventListener("click", () =>
+      void navigator.go(button.dataset.stateTarget)
+    )
+  );
+
+  replay?.addEventListener("click", async () => {
+    await navigator.go("one", { animate: false });
+    await nextFrame();
+    await navigator.go("two");
+  });
 }
+

@@ -15,7 +15,7 @@
 <main class="demo-shell">
 <section class="demo-hero"><div><p class="eyebrow">Composed effects</p><h1>Clipping and compression are different.</h1></div><p>Reveal changes the visible mask. Collapse changes geometry along an axis. They can look similar but should remain independently composable.</p></section>
 <section class="demo-panel">
-<div class="demo-toolbar"><p class="lab-note">The cards contain identical text: Reveal clips it intact; Collapse compresses the text with the geometry.</p><button class="demo-button demo-button-primary" data-replay>↻ Replay</button></div>
+<div class="demo-toolbar"><div class="lab-controls"><button class="demo-button" data-state-target="closed">State 1 · Closed</button><button class="demo-button is-active" data-state-target="open">State 2 · Open</button></div><button class="demo-button demo-button-primary" data-replay>↻ Replay 1 → 2</button></div>
 <div class="lab-stage reveal-stage" data-lab-stage><div><h3>Reveal</h3><div id="revealCard" class="reveal-card"><div class="demo-object-copy"><strong>The same words, two behaviours.</strong><p>This heading and paragraph are identical in both cards, making clipping versus geometric compression visible in the typography.</p></div></div></div><div><h3>Collapse</h3><div id="collapseCard" class="reveal-card"><div class="demo-object-copy"><strong>The same words, two behaviours.</strong><p>This heading and paragraph are identical in both cards, making clipping versus geometric compression visible in the typography.</p></div></div></div></div>
 
 </section>
