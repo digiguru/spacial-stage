@@ -39,7 +39,7 @@ The demo intentionally uses four different kinds of UI object:
 - a title + paragraph content block;
 - a collection of floating cards.
 
-Each can be clicked directly on the stage or selected from the object toolbar and configured independently for the active state.
+Each can be clicked directly on the stage or selected from the object toolbar and configured independently for the active state. Clicking empty stage space, pressing Escape, or clicking the active object tab again clears selection so the full animation can be previewed without authoring chrome.
 
 The selected object is outlined by a separate presentation-layer overlay, so selection chrome stays sharp and visible even when the object itself is blurred, faded or sent into the background.
 

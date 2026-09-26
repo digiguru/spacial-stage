@@ -327,7 +327,9 @@ const DEFAULT_STATES = [
 let model = loadModel();
 let activeStateId = model.activeStateId || model.states[0].id;
 let previousStateId = model.previousStateId || null;
-let selectedObjectId = model.selectedObjectId || "svg";
+let selectedObjectId = model.selectedObjectId === null
+  ? null
+  : (OBJECTS[model.selectedObjectId] ? model.selectedObjectId : "svg");
 let isAnimating = false;
 let formSyncing = false;
 let replayTimer = null;
@@ -432,7 +434,13 @@ function renderObjectTabs() {
     button.dataset.objectId = objectId;
     button.classList.toggle("is-active", objectId === selectedObjectId);
     button.innerHTML = `<span>${escapeHtml(object.name)}</span><small>${titleCase(object.role)}</small>`;
-    button.addEventListener("click", () => selectObject(objectId));
+    button.addEventListener("click", () => {
+      if (selectedObjectId === objectId) {
+        deselectObject();
+      } else {
+        selectObject(objectId);
+      }
+    });
     objectTabs.append(button);
   }
 }
@@ -446,15 +454,41 @@ function selectObject(objectId) {
   syncSelection();
 }
 
+function deselectObject() {
+  if (selectedObjectId === null) return;
+
+  clearTimeout(replayTimer);
+  replaySequence += 1;
+  selectedObjectId = null;
+  saveModel();
+  renderObjectTabs();
+  syncSelection();
+}
+
 function syncSelection() {
   const state = activeState();
   const object = OBJECTS[selectedObjectId];
 
-  selectedObjectName.textContent = object.name;
-  selectedRole.textContent = titleCase(object.role);
   selectedStateName.textContent = state.name;
   stageStateLabel.textContent = state.name;
   stateNameInput.value = state.name;
+
+  if (!object) {
+    selectedObjectName.textContent = "No object selected";
+    selectedRole.textContent = "Preview";
+    cssTitle.textContent = "Preview · " + state.name;
+    selectionOverlay.hidden = true;
+    form.hidden = true;
+    zIndexWarning.hidden = true;
+    zIndexWarning.textContent = "";
+    elementCss.textContent = "Select an object to inspect its destination CSS.";
+    parentCss.textContent = "Select an object to inspect its parent / group CSS.";
+    return;
+  }
+
+  form.hidden = false;
+  selectedObjectName.textContent = object.name;
+  selectedRole.textContent = titleCase(object.role);
   cssTitle.textContent = object.name + " · " + state.name;
   selectionOverlayLabel.textContent = object.name;
 
@@ -1006,6 +1040,12 @@ function syncSizeInputs(sizeMode) {
 }
 
 function updateZIndexWarning() {
+  if (!selectedObjectId || !OBJECTS[selectedObjectId]) {
+    zIndexWarning.hidden = true;
+    zIndexWarning.textContent = "";
+    return;
+  }
+
   const values = model.states.map((state) => ({
     name: state.name,
     zIndex: normaliseSpec(state.objects[selectedObjectId]).zIndex
@@ -1081,7 +1121,9 @@ function renameActiveState(value) {
   state.name = name || "New State";
   selectedStateName.textContent = state.name;
   stageStateLabel.textContent = state.name;
-  cssTitle.textContent = OBJECTS[selectedObjectId].name + " · " + state.name;
+  cssTitle.textContent = selectedObjectId && OBJECTS[selectedObjectId]
+    ? OBJECTS[selectedObjectId].name + " · " + state.name
+    : "Preview · " + state.name;
 
   const activeTab = stateTabs.querySelector(`[data-state-id="${state.id}"] span`);
   if (activeTab) activeTab.textContent = state.name;
@@ -1434,6 +1476,23 @@ window.addEventListener("pointermove", moveDrag);
 window.addEventListener("pointerup", endDrag);
 window.addEventListener("pointercancel", endDrag);
 window.addEventListener("resize", updateSelectionOverlay);
+
+stage.addEventListener("click", (event) => {
+  if (
+    event.target.closest("[data-object]")
+    || event.target.closest(".stage-actions")
+    || event.target.closest(".selection-overlay")
+  ) {
+    return;
+  }
+
+  deselectObject();
+});
+
+window.addEventListener("keydown", (event) => {
+  if (event.key !== "Escape") return;
+  deselectObject();
+});
 
 form.addEventListener("input", (event) => {
   updateSelectedSpec(event);
