@@ -80,33 +80,135 @@ function createVisualStateNavigator({
 
 if (demo === "animations") {
   let preset = "slide-fade";
-  const buttons = [...document.querySelectorAll("[data-preset]")];
+  let state = "two";
+  let running = false;
+  let pending = null;
+  const presetButtons = [...document.querySelectorAll("[data-preset]")];
+  const stateButtons = [...document.querySelectorAll("[data-motion-state]")];
 
-  function run() {
-    const frames = {
-      "slide-fade": [
-        { transform: "translate3d(-140px, 70px, 0) scale(.82)", opacity: 0 },
-        { transform: "translate3d(0, 0, 0) scale(1)", opacity: 1 }
-      ],
-      reveal: [
-        { clipPath: "inset(0 100% 0 0)", transform: "translate3d(0,0,0)", opacity: 1 },
-        { clipPath: "inset(0 0 0 0)", transform: "translate3d(0,0,0)", opacity: 1 }
-      ],
-      "focus-collapse": [
-        { filter: "blur(18px) saturate(.72)", transform: "scale(.2,.92)", opacity: .45 },
-        { filter: "blur(0) saturate(1)", transform: "scale(1,1)", opacity: 1 }
-      ]
-    }[preset];
-    animateObject(frames);
+  const frames = {
+    "slide-fade": {
+      one: {
+        transform: "translate3d(-140px, 70px, 0) scale(.82)",
+        opacity: "0",
+        clipPath: "inset(0 0 0 0)",
+        filter: "blur(0) saturate(1)"
+      },
+      two: {
+        transform: "translate3d(0, 0, 0) scale(1)",
+        opacity: "1",
+        clipPath: "inset(0 0 0 0)",
+        filter: "blur(0) saturate(1)"
+      }
+    },
+    reveal: {
+      one: {
+        clipPath: "inset(0 100% 0 0)",
+        transform: "translate3d(0,0,0)",
+        opacity: "1",
+        filter: "blur(0) saturate(1)"
+      },
+      two: {
+        clipPath: "inset(0 0 0 0)",
+        transform: "translate3d(0,0,0)",
+        opacity: "1",
+        filter: "blur(0) saturate(1)"
+      }
+    },
+    "focus-collapse": {
+      one: {
+        filter: "blur(18px) saturate(.72)",
+        transform: "scale(.2,.92)",
+        opacity: "0.45",
+        clipPath: "inset(0 0 0 0)"
+      },
+      two: {
+        filter: "blur(0) saturate(1)",
+        transform: "scale(1,1)",
+        opacity: "1",
+        clipPath: "inset(0 0 0 0)"
+      }
+    }
+  };
+
+  function syncStateButtons(target = state) {
+    const active = stateButtons.find(
+      (button) => button.dataset.motionState === target
+    );
+    activate(active, "[data-motion-state]");
+    stateButtons.forEach((button) =>
+      button.setAttribute("aria-pressed", String(button === active))
+    );
   }
 
-  buttons.forEach((button) => button.addEventListener("click", () => {
-    preset = button.dataset.preset;
-    activate(button, "[data-preset]");
-    run();
-  }));
-  replay?.addEventListener("click", run);
-  run();
+  function applyState(name) {
+    object.getAnimations().forEach((animation) => animation.cancel());
+    Object.assign(object.style, frames[preset][name]);
+  }
+
+  async function goState(next, { animate = true } = {}) {
+    if (running) {
+      pending = next;
+      return;
+    }
+    if (next === state) {
+      syncStateButtons();
+      return;
+    }
+
+    running = true;
+    syncStateButtons(next);
+
+    try {
+      if (!animate) {
+        applyState(next);
+      } else {
+        Object.assign(object.style, frames[preset][next]);
+        const animation = animateObject(
+          [frames[preset][state], frames[preset][next]]
+        );
+        try {
+          await animation?.finished;
+        } catch {}
+      }
+      state = next;
+    } finally {
+      running = false;
+      syncStateButtons();
+
+      if (pending && pending !== state) {
+        const queued = pending;
+        pending = null;
+        void goState(queued);
+      } else {
+        pending = null;
+      }
+    }
+  }
+
+  presetButtons.forEach((button) =>
+    button.addEventListener("click", () => {
+      preset = button.dataset.preset;
+      activate(button, "[data-preset]");
+      applyState(state);
+    })
+  );
+
+  stateButtons.forEach((button) =>
+    button.addEventListener("click", () =>
+      void goState(button.dataset.motionState)
+    )
+  );
+
+  replay?.addEventListener("click", async () => {
+    await goState("one", { animate: false });
+    requestAnimationFrame(() =>
+      requestAnimationFrame(() => void goState("two"))
+    );
+  });
+
+  applyState(state);
+  syncStateButtons();
 }
 
 if (demo === "geometry") {
@@ -164,22 +266,26 @@ if (demo === "geometry") {
 
 if (demo === "layout") {
   let layout = "overlay";
+  let state = "two";
+  let running = false;
+  let pending = null;
   const content = document.querySelector("#layoutContent");
-  const buttons = [...document.querySelectorAll("[data-layout]")];
+  const layoutButtons = [...document.querySelectorAll("[data-layout]")];
+  const stateButtons = [...document.querySelectorAll("[data-motion-state]")];
 
-  function run() {
-    object.getAnimations().forEach((animation) => animation.cancel());
-    content.getAnimations().forEach((animation) => animation.cancel());
+  const objectStates = {
+    one: {
+      transform: "translate3d(-105%,0,0)",
+      opacity: "0.4"
+    },
+    two: {
+      transform: "translate3d(0,0,0)",
+      opacity: "1"
+    }
+  };
 
-    object.animate(
-      [
-        { transform: "translate3d(-105%,0,0)", opacity: .4 },
-        { transform: "translate3d(0,0,0)", opacity: 1 }
-      ],
-      { duration: 720, easing: "cubic-bezier(.2,.82,.24,1)", fill: "both" }
-    );
-
-    const frames = {
+  function contentFrames() {
+    return {
       overlay: [
         { transform: "translate3d(0,0,0)", opacity: 1, filter: "blur(0)" },
         { transform: "translate3d(0,0,0)", opacity: 1, filter: "blur(0)" }
@@ -200,17 +306,103 @@ if (demo === "layout") {
         { transform: "translate3d(0,0,0) scale(1)", opacity: 1 }
       ]
     }[layout];
-
-    content.animate(frames, { duration: 720, easing: "cubic-bezier(.2,.82,.24,1)", fill: "both" });
   }
 
-  buttons.forEach((button) => button.addEventListener("click", () => {
-    layout = button.dataset.layout;
-    activate(button, "[data-layout]");
-    run();
-  }));
-  replay?.addEventListener("click", run);
-  run();
+  function syncStateButtons(target = state) {
+    const active = stateButtons.find(
+      (button) => button.dataset.motionState === target
+    );
+    activate(active, "[data-motion-state]");
+    stateButtons.forEach((button) =>
+      button.setAttribute("aria-pressed", String(button === active))
+    );
+  }
+
+  function applyState(name) {
+    object.getAnimations().forEach((animation) => animation.cancel());
+    Object.assign(object.style, objectStates[name]);
+  }
+
+  async function goState(next, { animate = true } = {}) {
+    if (running) {
+      pending = next;
+      return;
+    }
+    if (next === state) {
+      syncStateButtons();
+      return;
+    }
+
+    running = true;
+    syncStateButtons(next);
+
+    try {
+      if (!animate) {
+        applyState(next);
+      } else {
+        Object.assign(object.style, objectStates[next]);
+        const objectAnimation = animateObject(
+          [objectStates[state], objectStates[next]],
+          { duration: 720 }
+        );
+        const companionAnimation = content.animate(
+          contentFrames(),
+          {
+            duration: 720,
+            easing: "cubic-bezier(.2,.82,.24,1)",
+            fill: "both"
+          }
+        );
+
+        try {
+          await Promise.all([
+            objectAnimation?.finished,
+            companionAnimation.finished
+          ]);
+        } catch {}
+      }
+      state = next;
+    } finally {
+      running = false;
+      syncStateButtons();
+
+      if (pending && pending !== state) {
+        const queued = pending;
+        pending = null;
+        void goState(queued);
+      } else {
+        pending = null;
+      }
+    }
+  }
+
+  layoutButtons.forEach((button) =>
+    button.addEventListener("click", async () => {
+      layout = button.dataset.layout;
+      activate(button, "[data-layout]");
+
+      await goState("one", { animate: false });
+      requestAnimationFrame(() =>
+        requestAnimationFrame(() => void goState("two"))
+      );
+    })
+  );
+
+  stateButtons.forEach((button) =>
+    button.addEventListener("click", () =>
+      void goState(button.dataset.motionState)
+    )
+  );
+
+  replay?.addEventListener("click", async () => {
+    await goState("one", { animate: false });
+    requestAnimationFrame(() =>
+      requestAnimationFrame(() => void goState("two"))
+    );
+  });
+
+  applyState(state);
+  syncStateButtons();
 }
 
 if (demo === "depth") {
