@@ -11,6 +11,7 @@ import {
   normaliseSpec,
   positionValuesForCoordinates,
   resolveDepth,
+  resolveDepthOfField,
   resolveDirection,
   resolvePosition,
   resolveSize,
@@ -78,6 +79,52 @@ test("layout shift frames hold old layout position while the browser commits the
     { translate: "0px -300px" },
     { translate: "0px 0px" }
   ]);
+});
+
+test("depth of field keeps a focus band sharp and increases blur with distance", () => {
+  const centre = resolveDepthOfField({
+    depth: 0,
+    focusDepth: 0,
+    focusArea: 0.3,
+    maxBlur: 16
+  });
+  const edge = resolveDepthOfField({
+    depth: 1,
+    focusDepth: 0,
+    focusArea: 0.3,
+    maxBlur: 16
+  });
+  const shifted = resolveDepthOfField({
+    depth: 0.6,
+    focusDepth: 0.6,
+    focusArea: 0.2,
+    maxBlur: 16
+  });
+
+  assert.equal(centre.blur, 0);
+  assert.equal(centre.inFocus, true);
+  assert.equal(shifted.blur, 0);
+  assert.equal(shifted.inFocus, true);
+  assert.equal(edge.blur, 16);
+  assert.equal(edge.sharpness, 0);
+});
+
+test("depth of field focus area broadens the sharp region", () => {
+  const narrow = resolveDepthOfField({
+    depth: 0.45,
+    focusDepth: 0,
+    focusArea: 0.1,
+    maxBlur: 12
+  });
+  const wide = resolveDepthOfField({
+    depth: 0.45,
+    focusDepth: 0,
+    focusArea: 0.8,
+    maxBlur: 12
+  });
+
+  assert.ok(narrow.blur > wide.blur);
+  assert.equal(wide.inFocus, false);
 });
 
 test("normalises named-state specs including anchored position and custom vector", () => {
