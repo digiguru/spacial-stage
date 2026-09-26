@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta name="theme-color" content="#171816"/><link rel="icon" href="/brand-mark.svg" type="image/svg+xml"/>
+<link rel="stylesheet" href="/src/demo-pages.css"/>
+<title>Composed animations · Spacial Stage</title><script type="module" src="/src/demos/focused.js"></script>
+</head>
+<body data-demo="animations">
+<header class="demo-topbar"><a class="demo-brand" href="/"><img src="/brand-mark.svg" alt="" width="42" height="42"/><span><small>Spacial Stage</small><strong>Focused demos</strong></span></a><nav class="demo-nav" aria-label="Demo navigation">
+  <a href="/">Playground</a>
+  <a href="/demos/">Demos</a>
+  <a href="/demos/absolute-to-flow.html">Absolute → Flow</a>
+  <a href="/demos/composed-animations.html" aria-current="page">Animations</a>
+  <a href="/demos/geometry.html">Geometry</a>
+  <a href="/demos/layout-effects.html">Layout</a>
+  <a href="/demos/depth-stacking.html">Depth</a>
+  <a href="/demos/3d-transforms.html">3D</a>
+</nav></header>
+<main class="demo-shell"><section class="demo-hero"><div><p class="eyebrow">Motion grammar</p><h1>Effects compose.</h1></div><p>Animations are a set, not a single transition type. Toggle combinations and replay the same destination using different starting effects.</p></section><section class="demo-panel"><div class="demo-toolbar"><div class="state-buttons">
+    <button class="demo-button is-active" data-preset="slide-fade">Slide + Fade</button>
+    <button class="demo-button" data-preset="reveal">Reveal</button>
+    <button class="demo-button" data-preset="focus-collapse">Focus + Collapse</button>
+  </div><button id="focusedReplay" class="demo-button demo-button-primary">↻ Replay</button></div>
+  <div class="simple-stage"><div id="focusedObject" class="simple-object"></div></div>
+  <div class="demo-caption"><article><strong>Independent effects</strong><p>Slide owns geometry; Fade owns opacity; Reveal owns clipping; Focus owns softness; Collapse owns directional compression.</p></article><article><strong>Same destination</strong><p>The end state stays fixed while only the arrival recipe changes.</p></article><article><strong>Zero is valid</strong><p>An empty animation set means snap directly to the authored destination.</p></article></div></section></main>
+</body></html>
