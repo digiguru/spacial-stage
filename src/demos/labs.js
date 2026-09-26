@@ -511,8 +511,12 @@ if (demo === "reduced-motion") {
     );
 
     reduced.getAnimations?.().forEach((animation) => animation.cancel());
-    reduced.style.transform = "translateX(110px) rotate(0deg)";
-    reduced.style.opacity = "1";
+    reduced.style.transform = "translateX(-110px) rotate(0deg)";
+    reduced.style.opacity = ".2";
+    requestAnimationFrame(() => {
+      reduced.style.transform = "translateX(110px) rotate(0deg)";
+      reduced.style.opacity = "1";
+    });
   }
 
   replay?.addEventListener("click", run);
