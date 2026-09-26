@@ -162,13 +162,15 @@ The framework:
 2. lets normal CSS/layout calculate its actual rectangle;
 3. measures the destination and required flow height;
 4. derives referenced absolute placements from that browser-measured size;
-5. reserves/collapses the flow slot while surrounding content reflows;
-6. FLIPs the real element between the two rectangles;
-7. interpolates placement rotation;
-8. reparents the real element only after the transition;
-9. commits the destination as real absolute or normal-flow layout.
+5. commits the destination slot size immediately so the target geometry is stable;
+6. remeasures the destination after responsive layout has settled;
+7. FLIPs affected neighbouring elements from their old browser positions to their new positions, so surrounding content visibly moves apart without animating a guessed slot height;
+8. FLIPs the real element between source and settled destination rectangles;
+9. interpolates placement rotation;
+10. reparents the real element only after the transition;
+11. commits the destination as real absolute or normal-flow layout.
 
-This is deliberately different from asking application code to reproduce flex/block layout mathematics. The application still owns design intent—such as “3× larger”, “38% of itself off the left edge”, “centred in this slot”, or “24px before/after”—but not DOM-coordinate calculations.
+This is deliberately different from asking application code to reproduce flex/block layout mathematics. The application still owns design intent—such as “3× larger”, “62% of itself off the left edge”, “centred in this slot”, or “24px before/after”—but not DOM-coordinate calculations.
 
 Low-level primitives remain available: `captureRect`, `captureLayoutRect`, `rectRelativeTo`, `resolveAbsolutePlacementRect`, `flipFrames`, `animateFlip`, and `animateFlowSpace`.
 
@@ -182,7 +184,7 @@ The focused Absolute → Flow demo now uses the placement controller directly. I
 - tweened into a real slot between paragraph 1 and paragraph 2 in State 2;
 - with paragraph 1 determining the destination top edge;
 - with the SVG's measured rendered height determining how much flow space opens;
-- with paragraph 2 moving because the slot height changes, not because paragraph 2 receives an arbitrary transform.
+- with paragraph 2 moving through a browser-measured layout FLIP: the final document flow is committed first, then the paragraph visually glides from its old position to its new one.
 
 The demo contains no hand-authored destination rectangle maths: its inline rectangle and slot height are browser-measured by the placement controller.
 

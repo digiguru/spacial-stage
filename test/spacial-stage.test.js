@@ -6,6 +6,7 @@ import {
   cssForParent,
   flipFrames,
   layoutCompanionFrames,
+  layoutShiftFrames,
   resolveAbsolutePlacementRect,
   normaliseSpec,
   positionValuesForCoordinates,
@@ -65,6 +66,18 @@ test("absolute placement can scale from a browser-measured reference and offset 
   assert.equal(rect.height, 600);
   assert.equal(rect.left, -128);
   assert.equal(rect.top, 68);
+});
+
+test("layout shift frames hold old layout position while the browser commits the new one", () => {
+  const frames = layoutShiftFrames(
+    { left: 40, top: 120, width: 300, height: 80 },
+    { left: 40, top: 420, width: 300, height: 80 }
+  );
+
+  assert.deepEqual(frames, [
+    { translate: "0px -300px" },
+    { translate: "0px 0px" }
+  ]);
 });
 
 test("normalises named-state specs including anchored position and custom vector", () => {

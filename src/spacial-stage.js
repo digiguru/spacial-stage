@@ -657,6 +657,84 @@ export function resolveAbsolutePlacementRect(
   };
 }
 
+export function layoutShiftFrames(fromRect, toRect) {
+  if (!fromRect || !toRect) return [];
+
+  const deltaX = fromRect.left - toRect.left;
+  const deltaY = fromRect.top - toRect.top;
+
+  return [
+    {
+      translate: `${trimNumber(deltaX)}px ${trimNumber(deltaY)}px`
+    },
+    {
+      translate: "0px 0px"
+    }
+  ];
+}
+
+export function captureLayoutChildren(root, { exclude = [] } = {}) {
+  if (!root?.children) return new Map();
+
+  const excluded = new Set(exclude);
+  return new Map(
+    [...root.children]
+      .filter((element) => !excluded.has(element))
+      .map((element) => [element, captureLayoutRect(element)])
+      .filter(([, rect]) => rect)
+  );
+}
+
+export async function animateLayoutChanges(
+  before,
+  after,
+  {
+    duration = 700,
+    easing = "cubic-bezier(.2,.82,.24,1)",
+    reducedMotion = prefersReducedMotion()
+  } = {}
+) {
+  if (!(before instanceof Map) || !(after instanceof Map)) return [];
+
+  const animations = [];
+
+  for (const [element, fromRect] of before) {
+    const toRect = after.get(element);
+    if (!toRect) continue;
+
+    const frames = layoutShiftFrames(fromRect, toRect);
+    const deltaX = fromRect.left - toRect.left;
+    const deltaY = fromRect.top - toRect.top;
+
+    if (
+      reducedMotion
+      || typeof element.animate !== "function"
+      || (Math.abs(deltaX) < 0.01 && Math.abs(deltaY) < 0.01)
+    ) {
+      continue;
+    }
+
+    const animation = element.animate(frames, {
+      duration,
+      easing,
+      fill: "both"
+    });
+
+    animations.push(animation);
+  }
+
+  await Promise.all(
+    animations.map(async (animation) => {
+      try {
+        await animation.finished;
+      } catch {}
+      animation.cancel();
+    })
+  );
+
+  return animations;
+}
+
 export function createPlacementController(
   element,
   {
@@ -890,7 +968,21 @@ export function createPlacementController(
     const fromRect = captureLayoutRect(element);
     const fromRotate = source?.rotateZ || 0;
     const toRotate = target.rotateZ || 0;
-    const jobs = [];
+    const flowSlots = Object.values(placements)
+      .filter((value) => value?.type === "flow" && value.slot)
+      .map((value) => value.slot);
+    const layoutRoots = new Set(
+      [source, target]
+        .filter((value) => value?.type === "flow")
+        .map((value) => value.spec.layoutRoot || value.slot.parentElement)
+        .filter(Boolean)
+    );
+    const beforeLayouts = new Map(
+      [...layoutRoots].map((root) => [
+        root,
+        captureLayoutChildren(root, { exclude: flowSlots })
+      ])
+    );
 
     running = true;
 
@@ -918,54 +1010,81 @@ export function createPlacementController(
 
         applyAbsolute(overlayMeasured);
         element.style.rotate = "0deg";
-
-        jobs.push(
-          animateFlowSpace(
-            target.slot,
-            target.slot.getBoundingClientRect().height,
-            target.slotHeight,
-            { duration, easing, reducedMotion }
-          )
-        );
       } else {
         applyAbsolute(target);
         element.style.rotate = "0deg";
       }
 
-      if (source?.type === "flow" && source.slot !== target.slot) {
-        jobs.push(
-          animateFlowSpace(
-            source.slot,
-            source.slot.getBoundingClientRect().height,
-            source.collapsedHeight,
-            { duration, easing, reducedMotion }
-          )
+      for (const [placementName, spec] of Object.entries(placements)) {
+        if (spec?.type !== "flow" || !spec.slot) continue;
+
+        const height = placementName === name && target.type === "flow"
+          ? target.slotHeight
+          : Math.max(0, finiteNumber(spec.collapsedHeight, 0));
+
+        spec.slot.style.height = `${trimNumber(height)}px`;
+      }
+
+      const settledTarget = measure(name);
+
+      if (settledTarget.type === "flow") {
+        const overlayContainer =
+          source?.type === "absolute"
+            ? source.container
+            : firstAbsoluteContainer();
+        const overlayMeasured = {
+          ...settledTarget,
+          type: "absolute",
+          container: overlayContainer,
+          spec: {
+            ...settledTarget.spec,
+            container: overlayContainer,
+            style: settledTarget.spec.overlayStyle || {}
+          }
+        };
+
+        applyAbsolute(overlayMeasured);
+        element.style.rotate = "0deg";
+      } else {
+        applyAbsolute(settledTarget);
+        element.style.rotate = "0deg";
+      }
+
+      const layoutJobs = [];
+
+      for (const root of layoutRoots) {
+        const after = captureLayoutChildren(root, { exclude: flowSlots });
+        layoutJobs.push(
+          animateLayoutChanges(beforeLayouts.get(root), after, {
+            duration,
+            easing,
+            reducedMotion
+          })
         );
       }
 
-      jobs.push(
-        animateFlip(element, fromRect, target.rect, {
+      await Promise.all([
+        ...layoutJobs,
+        animateFlip(element, fromRect, settledTarget.rect, {
           duration,
           easing,
           reducedMotion,
           fromRotate,
-          toRotate,
+          toRotate: settledTarget.rotateZ || 0,
           origin: "center"
         })
-      );
+      ]);
 
-      await Promise.all(jobs);
-
-      if (target.type === "flow") {
-        applyFlow(target);
+      if (settledTarget.type === "flow") {
+        applyFlow(settledTarget);
         collapseOtherFlowSlots(name);
       } else {
-        applyAbsolute(target);
+        applyAbsolute(settledTarget);
         collapseOtherFlowSlots();
       }
 
       currentName = name;
-      return target;
+      return settledTarget;
     } finally {
       running = false;
     }

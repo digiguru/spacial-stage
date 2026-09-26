@@ -22,7 +22,7 @@ const placement = createPlacementController(svgObject, {
       scale: 3,
       anchorX: "left",
       anchorY: "top",
-      offsetX: { value: -0.38, relativeTo: "self" },
+      offsetX: { value: -0.62, relativeTo: "self" },
       offsetY: { value: 0.03, relativeTo: "container" },
       rotateZ: -90
     },
@@ -54,7 +54,13 @@ async function goTo(name, { animate = true } = {}) {
   stage.dataset.mode = name === "inline" ? "inline" : "background";
 
   if (animate) {
-    await placement.transition(name);
+    stage.dataset.transitioning = "true";
+
+    try {
+      await placement.transition(name);
+    } finally {
+      delete stage.dataset.transitioning;
+    }
   } else {
     placement.apply(name);
   }
