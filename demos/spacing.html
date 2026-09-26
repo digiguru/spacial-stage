@@ -15,7 +15,7 @@
 <main class="demo-shell">
 <section class="demo-hero"><div><p class="eyebrow">Layout</p><h1>Inside space and outside space move differently.</h1></div><p>Animating padding changes the box's internal geometry. Animating margin changes the space around the element and therefore its relationship to siblings.</p></section>
 <section class="demo-panel">
-<div class="demo-toolbar"><p class="lab-note">Both animate from 8px to 56px vertically / 28px horizontally.</p><button class="demo-button demo-button-primary" data-replay>↻ Replay</button></div>
+<div class="demo-toolbar"><div class="lab-controls"><button class="demo-button is-active" data-state-target="compact">State 1 · Compact</button><button class="demo-button" data-state-target="expanded">State 2 · Expanded</button></div><button class="demo-button demo-button-primary" data-replay>↻ Replay 1 → 2</button></div>
 <div class="lab-stage spacing-demo" data-lab-stage>
  <div><h3>Padding</h3><div id="paddingBox" class="spacing-box"><div class="spacing-inner">content</div></div><div class="spacing-sibling">Sibling after padded box</div></div>
  <div><h3>Margin</h3><div class="spacing-box"><div id="marginInner" class="spacing-inner">content</div></div><div class="spacing-sibling">Sibling after margin box</div></div>
