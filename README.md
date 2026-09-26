@@ -118,11 +118,65 @@ The current playground therefore treats Push as a temporary "make room while thi
 
 Layout effects are currently coordinated globally per state transition. If several objects request non-Overlay layout effects at once, the playground prefers the panel's layout effect; if there is no panel candidate, it uses the first non-Overlay request. Individual object animations still run independently.
 
+## Placement transitions
+
+**Placement is now a first-class framework concern.** Consumers describe where an object belongs; Spacial Stage asks the browser where that destination really is and owns the transition between layout systems.
+
+`createPlacementController(element, options)` supports named placements such as:
+
+```js
+const placement = createPlacementController(svg, {
+  initial: "background",
+  placements: {
+    background: {
+      type: "absolute",
+      container: stage,
+      sizeFrom: "inline",
+      scale: 3,
+      anchorX: "left",
+      anchorY: "top",
+      offsetX: { value: -0.38, relativeTo: "self" },
+      rotateZ: -90
+    },
+    inline: {
+      type: "flow",
+      slot,
+      align: "center",
+      collapsedHeight: 24,
+      gapBefore: 24,
+      gapAfter: 24,
+      style: {
+        width: "clamp(220px, 62%, 360px)",
+        aspectRatio: "1 / 1"
+      }
+    }
+  }
+});
+
+await placement.transition("inline");
+```
+
+The framework:
+
+1. materialises a hidden clone in the flow destination;
+2. lets normal CSS/layout calculate its actual rectangle;
+3. measures the destination and required flow height;
+4. derives referenced absolute placements from that browser-measured size;
+5. reserves/collapses the flow slot while surrounding content reflows;
+6. FLIPs the real element between the two rectangles;
+7. interpolates placement rotation;
+8. reparents the real element only after the transition;
+9. commits the destination as real absolute or normal-flow layout.
+
+This is deliberately different from asking application code to reproduce flex/block layout mathematics. The application still owns design intent—such as “3× larger”, “38% of itself off the left edge”, “centred in this slot”, or “24px before/after”—but not DOM-coordinate calculations.
+
+Low-level primitives remain available: `captureRect`, `captureLayoutRect`, `rectRelativeTo`, `resolveAbsolutePlacementRect`, `flipFrames`, `animateFlip`, and `animateFlowSpace`.
+
 ## Absolute ↔ flow transitions
 
 A core framework use case is moving one persistent object between **absolute stage space** and **real document flow** while surrounding content makes room for it.
 
-The focused Absolute → Flow demo shows the shared SVG:
+The focused Absolute → Flow demo now uses the placement controller directly. It shows the shared SVG:
 
 - absolutely positioned, blurred and recessed behind foreground text in State 1;
 - tweened into a real slot between paragraph 1 and paragraph 2 in State 2;
@@ -130,7 +184,7 @@ The focused Absolute → Flow demo shows the shared SVG:
 - with the SVG's measured rendered height determining how much flow space opens;
 - with paragraph 2 moving because the slot height changes, not because paragraph 2 receives an arbitrary transform.
 
-The framework exposes `captureRect`, `rectRelativeTo`, `flipFrames`, `animateFlip`, and `animateFlowSpace` as reusable primitives for this FLIP + flow-space pattern.
+The demo contains no hand-authored destination rectangle maths: its inline rectangle and slot height are browser-measured by the placement controller.
 
 ## Focused demo pages
 
