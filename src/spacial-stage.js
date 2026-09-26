@@ -484,22 +484,28 @@ export function flipFrames(
     - (useCenter ? (toRect.height - fromRect.height) / 2 : 0);
   const transformOrigin = useCenter ? "center center" : "top left";
 
+  const startTransform = [
+    `translate3d(${trimNumber(deltaX)}px, ${trimNumber(deltaY)}px, 0)`,
+    `scale(${trimNumber(scaleX)}, ${trimNumber(scaleY)})`
+  ];
+  const endTransform = [
+    "translate3d(0px, 0px, 0)",
+    "scale(1, 1)"
+  ];
+
+  if (fromRotate || toRotate) {
+    startTransform.push(`rotate(${trimNumber(fromRotate)}deg)`);
+    endTransform.push(`rotate(${trimNumber(toRotate)}deg)`);
+  }
+
   return [
     {
       transformOrigin,
-      transform: [
-        `translate3d(${trimNumber(deltaX)}px, ${trimNumber(deltaY)}px, 0)`,
-        `scale(${trimNumber(scaleX)}, ${trimNumber(scaleY)})`,
-        `rotate(${trimNumber(fromRotate)}deg)`
-      ].join(" ")
+      transform: startTransform.join(" ")
     },
     {
       transformOrigin,
-      transform: [
-        "translate3d(0px, 0px, 0)",
-        "scale(1, 1)",
-        `rotate(${trimNumber(toRotate)}deg)`
-      ].join(" ")
+      transform: endTransform.join(" ")
     }
   ];
 }
