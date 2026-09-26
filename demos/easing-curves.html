@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta name="theme-color" content="#171816"/><link rel="icon" href="/brand-mark.svg" type="image/svg+xml"/>
+<link rel="stylesheet" href="/src/demo-pages.css"/>
+<title>Animation curves · Spacial Stage</title><script type="module" src="/src/demos/labs.js"></script>
+</head>
+<body data-demo="easing">
+<header class="demo-topbar"><a class="demo-brand" href="/"><img src="/brand-mark.svg" alt="" width="42" height="42"/><span><small>Spacial Stage</small><strong>Animation curves</strong></span></a><nav class="demo-nav" aria-label="Demo navigation">
+  <a href="/">Playground</a>
+  <a href="/demos/">All demos</a>
+</nav></header>
+<main class="demo-shell">
+<section class="demo-hero"><div><p class="eyebrow">Timing</p><h1>Same distance. Different feel.</h1></div><p>Compare easing curves over exactly the same duration and distance. This isolates acceleration and deceleration from every other variable.</p></section>
+<section class="demo-panel">
+<div class="demo-toolbar"><p class="lab-note">Every runner uses 1800ms. Only the easing curve changes.</p><button class="demo-button demo-button-primary" data-replay>↻ Replay</button></div>
+<div class="lab-stage" data-lab-stage>
+ <div class="lab-row" data-easing="linear"><div class="lab-row-label"><strong>Linear</strong><small>linear</small></div><div class="lab-track"><div class="lab-runner"></div></div></div><div class="lab-row" data-easing="ease"><div class="lab-row-label"><strong>Ease</strong><small>ease</small></div><div class="lab-track"><div class="lab-runner"></div></div></div><div class="lab-row" data-easing="cubic-bezier(.2,.82,.24,1)"><div class="lab-row-label"><strong>Stage default</strong><small>cubic-bezier(.2,.82,.24,1)</small></div><div class="lab-track"><div class="lab-runner"></div></div></div><div class="lab-row" data-easing="cubic-bezier(.34,1.56,.64,1)"><div class="lab-row-label"><strong>Overshoot</strong><small>cubic-bezier(.34,1.56,.64,1)</small></div><div class="lab-track"><div class="lab-runner"></div></div></div>
+ </div>
+
+</section>
+</main></body></html>
