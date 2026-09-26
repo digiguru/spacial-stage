@@ -47,6 +47,85 @@ function prepareFrameworkObject(object) {
   captureNaturalSize(object);
 }
 
+function createStateNavigator({
+  initial,
+  buttons,
+  selector,
+  apply,
+  transition
+}) {
+  let current = initial;
+  let running = false;
+  let pending = null;
+
+  function syncButtons(target = current) {
+    activate(
+      buttons.find((button) => button.dataset.stateTarget === target),
+      selector
+    );
+  }
+
+  async function go(next, { animate = true } = {}) {
+    if (!next) return;
+
+    if (running) {
+      pending = next;
+      return;
+    }
+
+    if (next === current) {
+      syncButtons();
+      return;
+    }
+
+    running = true;
+    syncButtons(next);
+
+    try {
+      if (animate) {
+        await transition(current, next);
+      } else {
+        await apply(next);
+      }
+
+      current = next;
+    } finally {
+      running = false;
+      syncButtons();
+
+      if (pending && pending !== current) {
+        const queued = pending;
+        pending = null;
+        void go(queued);
+      } else {
+        pending = null;
+      }
+    }
+  }
+
+  function initialise() {
+    apply(initial);
+    syncButtons();
+  }
+
+  function reapply() {
+    apply(current);
+  }
+
+  initialise();
+
+  return {
+    go,
+    reapply,
+    get current() {
+      return current;
+    },
+    get running() {
+      return running;
+    }
+  };
+}
+
 if (demo === "easing") {
   const rows = [...document.querySelectorAll("[data-easing]")];
 
@@ -126,30 +205,49 @@ if (demo === "blur-focus") {
 if (demo === "size") {
   const object = stageObject();
   prepareFrameworkObject(object);
+  const buttons = [...document.querySelectorAll("[data-state-target]")];
 
-  const small = normaliseSpec({
-    animations: ["slide"],
-    horizontalAnchor: "center",
-    verticalAnchor: "center",
-    sizeMode: "absolute",
-    sizeWidth: 110,
-    sizeHeight: 110,
-    duration: 1500
-  });
-  const large = normaliseSpec({
-    ...small,
+  const states = {
+    small: normaliseSpec({
+      animations: ["slide"],
+      horizontalAnchor: "center",
+      verticalAnchor: "center",
+      sizeMode: "absolute",
+      sizeWidth: 110,
+      sizeHeight: 110,
+      duration: 1500
+    }),
+    large: null
+  };
+  states.large = normaliseSpec({
+    ...states.small,
     sizeWidth: 300,
     sizeHeight: 170
   });
 
-  async function run() {
-    applyFrame(object, destinationFrame(object, stage, small));
-    await nextFrame();
-    await animateBetweenStates(object, stage, small, large);
-  }
+  const navigator = createStateNavigator({
+    initial: "small",
+    buttons,
+    selector: "[data-state-target]",
+    apply(name) {
+      applyFrame(object, destinationFrame(object, stage, states[name]));
+    },
+    transition(from, to) {
+      return animateBetweenStates(object, stage, states[from], states[to]);
+    }
+  });
 
-  replay?.addEventListener("click", () => void run());
-  void run();
+  buttons.forEach((button) =>
+    button.addEventListener("click", () =>
+      void navigator.go(button.dataset.stateTarget)
+    )
+  );
+
+  replay?.addEventListener("click", async () => {
+    await navigator.go("small", { animate: false });
+    await nextFrame();
+    await navigator.go("large");
+  });
 }
 
 if (demo === "rotation") {
@@ -197,21 +295,25 @@ if (demo === "rotation") {
 if (demo === "absolute-absolute") {
   const object = stageObject();
   prepareFrameworkObject(object);
+  const buttons = [...document.querySelectorAll("[data-state-target]")];
 
-  const a = normaliseSpec({
-    animations: ["slide"],
-    horizontalAnchor: "left",
-    verticalAnchor: "top",
-    positionX: 28,
-    positionY: 28,
-    sizeMode: "absolute",
-    sizeWidth: 120,
-    sizeHeight: 120,
-    rotateZ: -12,
-    duration: 1800
-  });
-  const b = normaliseSpec({
-    ...a,
+  const states = {
+    a: normaliseSpec({
+      animations: ["slide"],
+      horizontalAnchor: "left",
+      verticalAnchor: "top",
+      positionX: 28,
+      positionY: 28,
+      sizeMode: "absolute",
+      sizeWidth: 120,
+      sizeHeight: 120,
+      rotateZ: -12,
+      duration: 1800
+    }),
+    b: null
+  };
+  states.b = normaliseSpec({
+    ...states.a,
     horizontalAnchor: "right",
     verticalAnchor: "bottom",
     positionX: -30,
@@ -221,35 +323,41 @@ if (demo === "absolute-absolute") {
     rotateZ: 24
   });
 
-  async function forward() {
-    applyFrame(object, destinationFrame(object, stage, a));
-    await nextFrame();
-    await animateBetweenStates(object, stage, a, b);
-  }
+  const navigator = createStateNavigator({
+    initial: "a",
+    buttons,
+    selector: "[data-state-target]",
+    apply(name) {
+      applyFrame(object, destinationFrame(object, stage, states[name]));
+    },
+    transition(from, to) {
+      return animateBetweenStates(object, stage, states[from], states[to]);
+    }
+  });
 
-  async function reverse() {
-    applyFrame(object, destinationFrame(object, stage, b));
-    await nextFrame();
-    await animateBetweenStates(object, stage, b, a);
-  }
+  buttons.forEach((button) =>
+    button.addEventListener("click", () =>
+      void navigator.go(button.dataset.stateTarget)
+    )
+  );
 
-  document.querySelector("[data-forward]")?.addEventListener("click", () => void forward());
-  document.querySelector("[data-reverse]")?.addEventListener("click", () => void reverse());
-  replay?.addEventListener("click", () => void forward());
-  void forward();
+  replay?.addEventListener("click", async () => {
+    await navigator.go("a", { animate: false });
+    await nextFrame();
+    await navigator.go("b");
+  });
 }
 
 if (demo === "alignment") {
   const object = stageObject();
   prepareFrameworkObject(object);
-  const buttons = [...document.querySelectorAll("[data-alignment]")];
+  const buttons = [...document.querySelectorAll("[data-state-target]")];
   const placements = {
     top: { horizontalAnchor: "center", verticalAnchor: "top", positionX: 0, positionY: 28 },
     right: { horizontalAnchor: "right", verticalAnchor: "center", positionX: -28, positionY: 0 },
     bottom: { horizontalAnchor: "center", verticalAnchor: "bottom", positionX: 0, positionY: -28 },
     left: { horizontalAnchor: "left", verticalAnchor: "center", positionX: 28, positionY: 0 }
   };
-  let current = "top";
 
   function spec(name) {
     return normaliseSpec({
@@ -262,28 +370,32 @@ if (demo === "alignment") {
     });
   }
 
-  async function go(name) {
-    const from = spec(current);
-    const to = spec(name);
-    current = name;
-    activate(buttons.find((button) => button.dataset.alignment === name), "[data-alignment]");
-    await animateBetweenStates(object, stage, from, to);
-  }
-
-  buttons.forEach((button) =>
-    button.addEventListener("click", () => void go(button.dataset.alignment))
-  );
-
-  replay?.addEventListener("click", async () => {
-    current = "top";
-    applyFrame(object, destinationFrame(object, stage, spec("top")));
-    await nextFrame();
-    for (const name of ["right", "bottom", "left", "top"]) {
-      await go(name);
+  const navigator = createStateNavigator({
+    initial: "top",
+    buttons,
+    selector: "[data-state-target]",
+    apply(name) {
+      applyFrame(object, destinationFrame(object, stage, spec(name)));
+    },
+    transition(from, to) {
+      return animateBetweenStates(object, stage, spec(from), spec(to));
     }
   });
 
-  applyFrame(object, destinationFrame(object, stage, spec("top")));
+  buttons.forEach((button) =>
+    button.addEventListener("click", () =>
+      void navigator.go(button.dataset.stateTarget)
+    )
+  );
+
+  replay?.addEventListener("click", async () => {
+    await navigator.go("top", { animate: false });
+    await nextFrame();
+
+    for (const name of ["right", "bottom", "left", "top"]) {
+      await navigator.go(name);
+    }
+  });
 }
 
 if (demo === "spacing") {
@@ -467,15 +579,18 @@ if (demo === "responsive") {
   const frame = document.querySelector(".responsive-frame");
   const object = stageObject();
   prepareFrameworkObject(object);
+  const buttons = [...document.querySelectorAll("[data-state-target]")];
 
-  function spec(anchor) {
+  function spec(name) {
+    const first = name === "a";
+
     return normaliseSpec({
       animations: ["slide"],
-      horizontalAnchor: anchor === "left" ? "left" : "right",
-      verticalAnchor: anchor === "left" ? "top" : "bottom",
+      horizontalAnchor: first ? "left" : "right",
+      verticalAnchor: first ? "top" : "bottom",
       positionMode: "percent",
-      positionX: anchor === "left" ? 6 : -6,
-      positionY: anchor === "left" ? 8 : -8,
+      positionX: first ? 6 : -6,
+      positionY: first ? 8 : -8,
       sizeMode: "percent",
       sizeWidth: 24,
       sizeHeight: 24,
@@ -483,42 +598,92 @@ if (demo === "responsive") {
     });
   }
 
-  async function run() {
-    const a = spec("left");
-    const b = spec("right");
-    applyFrame(object, destinationFrame(object, frame, a));
-    await nextFrame();
-    await animateBetweenStates(object, frame, a, b);
-  }
+  const navigator = createStateNavigator({
+    initial: "a",
+    buttons,
+    selector: "[data-state-target]",
+    apply(name) {
+      applyFrame(object, destinationFrame(object, frame, spec(name)));
+    },
+    transition(from, to) {
+      return animateBetweenStates(object, frame, spec(from), spec(to));
+    }
+  });
 
-  replay?.addEventListener("click", () => void run());
-  window.addEventListener("resize", () => void run());
-  void run();
+  buttons.forEach((button) =>
+    button.addEventListener("click", () =>
+      void navigator.go(button.dataset.stateTarget)
+    )
+  );
+
+  replay?.addEventListener("click", async () => {
+    await navigator.go("a", { animate: false });
+    await nextFrame();
+    await navigator.go("b");
+  });
+
+  window.addEventListener("resize", () => {
+    if (!navigator.running) navigator.reapply();
+  });
 }
 
 if (demo === "reduced-motion") {
   const motion = document.querySelector("#motionObject");
   const reduced = document.querySelector("#reducedObject");
+  const buttons = [...document.querySelectorAll("[data-state-target]")];
 
-  function run() {
-    runAnimation(
-      motion,
-      [
-        { transform: "translateX(-110px) rotate(-25deg)", opacity: .2 },
-        { transform: "translateX(110px) rotate(25deg)", opacity: 1 }
-      ],
-      { duration: 1600 }
-    );
+  const states = {
+    one: {
+      transform: "translateX(-110px) rotate(-25deg)",
+      opacity: "0.45"
+    },
+    two: {
+      transform: "translateX(110px) rotate(25deg)",
+      opacity: "1"
+    }
+  };
 
-    reduced.getAnimations?.().forEach((animation) => animation.cancel());
-    reduced.style.transform = "translateX(-110px) rotate(0deg)";
-    reduced.style.opacity = ".2";
-    requestAnimationFrame(() => {
-      reduced.style.transform = "translateX(110px) rotate(0deg)";
-      reduced.style.opacity = "1";
-    });
+  function applyState(element, name) {
+    element.getAnimations?.().forEach((animation) => animation.cancel());
+    Object.assign(element.style, states[name]);
   }
 
-  replay?.addEventListener("click", run);
-  run();
+  const navigator = createStateNavigator({
+    initial: "one",
+    buttons,
+    selector: "[data-state-target]",
+    apply(name) {
+      applyState(motion, name);
+      applyState(reduced, name);
+    },
+    async transition(from, to) {
+      // Reduced motion resolves to the exact semantic destination immediately.
+      applyState(reduced, to);
+
+      const animation = runAnimation(
+        motion,
+        [states[from], states[to]],
+        { duration: 1600 }
+      );
+
+      try {
+        await animation.finished;
+      } catch {}
+
+      applyState(motion, to);
+    }
+  });
+
+  buttons.forEach((button) =>
+    button.addEventListener("click", () =>
+      void navigator.go(button.dataset.stateTarget)
+    )
+  );
+
+  replay?.addEventListener("click", async () => {
+    await navigator.go("one", { animate: false });
+    await nextFrame();
+    await navigator.go("two");
+  });
 }
+
