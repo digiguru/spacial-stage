@@ -204,6 +204,10 @@ The playground remains the full authoring environment. The demos landing page is
 - reduced-motion outcomes;
 - 3D transforms, cube spin, parallax and classic Cover Flow.
 
+Discrete-state demos follow one interaction rule: **state buttons are destinations**. Clicking any state tweens from the currently completed state to that destination; clicking the active state is a no-op. If another state is clicked while a transition is running, it is queued and becomes the next destination. Replay controls are convenience sequences that reset to their documented source and then use the same state transition path.
+
+Reduced Motion demonstrates the semantic rule explicitly: the full-motion and reduced-motion examples always occupy the same selected state. The full-motion object interpolates between states; the reduced-motion object commits the selected destination immediately. Continuous interaction demos such as pointer-driven Parallax remain continuous rather than inventing artificial named states.
+
 Each focused demo also shows a **Markup required** reference underneath the visual example. Framework-backed demos show the minimal HTML plus Spacial Stage API setup; experimental browser-only demos show the raw HTML/CSS/WAAPI they currently rely on. The snippets are intentionally smaller than the demo source and include copy controls so the gallery doubles as living documentation.
 
 This keeps the terminology testable one behaviour at a time while the playground demonstrates complete named states.
