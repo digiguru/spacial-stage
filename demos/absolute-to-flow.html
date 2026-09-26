@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#171816" />
+    <link rel="icon" href="/brand-mark.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/src/demo-pages.css" />
+    <title>Absolute → Flow · Spacial Stage</title>
+    <script type="module" src="/src/demos/absolute-to-flow.js"></script>
+  </head>
+  <body>
+    <header class="demo-topbar">
+      <a class="demo-brand" href="/">
+        <img src="/brand-mark.svg" alt="" width="42" height="42" />
+        <span><small>Spacial Stage</small><strong>Focused demos</strong></span>
+      </a>
+      <nav class="demo-nav" aria-label="Demo navigation">
+        <a href="/">Playground</a>
+        <a href="/demos/">Demos</a>
+        <a href="/demos/absolute-to-flow.html" aria-current="page">Absolute → Flow</a>
+        <a href="/demos/composed-animations.html">Animations</a>
+        <a href="/demos/geometry.html">Geometry</a>
+        <a href="/demos/layout-effects.html">Layout</a>
+        <a href="/demos/3d-transforms.html">3D</a>
+      </nav>
+    </header>
+
+    <main class="demo-shell">
+      <section class="demo-hero">
+        <div>
+          <p class="eyebrow">Core framework capability</p>
+          <h1>Absolute space into document flow.</h1>
+        </div>
+        <p>
+          The same SVG begins absolutely positioned behind the copy, then becomes a real inline child
+          between two paragraphs. The first paragraph defines the destination top edge; the SVG's rendered
+          height defines the space that opens beneath it.
+        </p>
+      </section>
+
+      <section class="demo-panel">
+        <div class="demo-toolbar">
+          <div class="state-buttons" aria-label="Demo states">
+            <button id="stateBackground" class="demo-button is-active" type="button">State 1 · Background</button>
+            <button id="stateInline" class="demo-button" type="button">State 2 · Inline</button>
+          </div>
+          <button id="replayDemo" class="demo-button demo-button-primary" type="button">↻ Replay 1 → 2</button>
+        </div>
+
+        <div id="flowStage" class="demo-stage-dark" data-mode="background">
+          <div class="demo-grid" aria-hidden="true"></div>
+
+          <article id="flowArticle" class="article-demo">
+            <h2>A shared visual can move into the story.</h2>
+            <p id="paragraphOne">
+              Spatial continuity works best when the object does not disappear and get recreated somewhere
+              else. Here the visual starts as atmosphere behind the text, soft enough that the copy remains
+              dominant.
+            </p>
+
+            <div id="flowSlot" class="flow-slot" aria-label="Inline SVG destination">
+              <div class="flow-slot-marker" aria-hidden="true"></div>
+            </div>
+
+            <p id="paragraphTwo">
+              In the second state the same object becomes part of the article. This paragraph is not
+              translated by an arbitrary amount: normal document flow moves it because the destination slot
+              grows to the SVG's actual rendered height.
+            </p>
+          </article>
+
+          <div id="flowSvg" class="hero-svg" aria-hidden="true">
+            <svg viewBox="0 0 320 320">
+              <defs>
+                <linearGradient id="flowRingGradient" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0%" stop-color="#d8ff63"/>
+                  <stop offset="35%" stop-color="#8be4ff"/>
+                  <stop offset="68%" stop-color="#cbbdff"/>
+                  <stop offset="100%" stop-color="#ff9b85"/>
+                </linearGradient>
+              </defs>
+              <circle cx="160" cy="160" r="143" fill="none" stroke="url(#flowRingGradient)" stroke-width="28"/>
+              <circle cx="160" cy="160" r="103" fill="none" stroke="rgba(255,255,255,.22)" stroke-width="2"/>
+              <path d="M95 171 C120 88 214 90 232 161 C245 212 200 248 151 233 C108 220 79 199 95 171Z" fill="rgba(255,255,255,.08)" stroke="rgba(255,255,255,.25)" stroke-width="2"/>
+              <circle cx="126" cy="142" r="10" fill="#d8ff63"/>
+              <circle cx="195" cy="132" r="8" fill="#8be4ff"/>
+              <circle cx="177" cy="199" r="13" fill="#cbbdff"/>
+            </svg>
+          </div>
+        </div>
+
+        <div class="demo-caption">
+          <article><strong>Top comes from paragraph 1</strong><p>The slot is immediately after the first paragraph, so its bottom edge establishes where the SVG can enter flow.</p></article>
+          <article><strong>Height comes from the SVG</strong><p>The slot expands to the measured rendered SVG height plus authored breathing room; paragraph 2 follows naturally.</p></article>
+          <article><strong>One object, two layout systems</strong><p>The SVG is genuinely reparented from the absolute stage layer into the flow slot after the FLIP completes.</p></article>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>
