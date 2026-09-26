@@ -21,13 +21,18 @@ const INLINE_PADDING = 24;
 let mode = "background";
 let running = false;
 
+function inlineSize() {
+  const articleRect = article.getBoundingClientRect();
+  return Math.min(360, Math.max(220, articleRect.width * 0.62));
+}
+
 function stageRectForBackground() {
   const stageRect = stage.getBoundingClientRect();
-  const size = Math.min(430, Math.max(250, stageRect.width * 0.46));
+  const size = inlineSize() * 3;
 
   return {
-    left: stageRect.right - size - Math.max(18, stageRect.width * 0.055),
-    top: stageRect.top + Math.max(70, stageRect.height * 0.13),
+    left: stageRect.left - size * 0.18,
+    top: stageRect.top + Math.max(12, stageRect.height * 0.03),
     width: size,
     height: size
   };
@@ -35,19 +40,17 @@ function stageRectForBackground() {
 
 function inlineMetrics() {
   const articleRect = article.getBoundingClientRect();
-  const paragraphRect = paragraphOne.getBoundingClientRect();
   const slotRect = slot.getBoundingClientRect();
-  const size = Math.min(360, Math.max(220, articleRect.width * 0.62));
+  const size = inlineSize();
 
   return {
     rect: {
       left: articleRect.left + (articleRect.width - size) / 2,
-      top: paragraphRect.bottom + INLINE_PADDING,
+      top: slotRect.top + INLINE_PADDING,
       width: size,
       height: size
     },
-    slotHeight: size + INLINE_PADDING * 2,
-    slotTop: slotRect.top
+    slotHeight: size + INLINE_PADDING * 2
   };
 }
 
@@ -76,7 +79,7 @@ function settleInline(metrics) {
     top: "auto",
     width: metrics.rect.width + "px",
     height: metrics.rect.height + "px",
-    margin: INLINE_PADDING + "px auto"
+    margin: INLINE_PADDING + "px 0 0"
   });
 }
 
