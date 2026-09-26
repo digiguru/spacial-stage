@@ -671,10 +671,22 @@ if (demo === "parallax") {
 
 if (demo === "coverflow") {
   const covers = [...document.querySelectorAll(".cover")];
+  const stateButtons = [...document.querySelectorAll("[data-cover-state]")];
   let active = 2;
+
+  function syncStateButtons() {
+    const activeButton = stateButtons.find(
+      (button) => Number(button.dataset.coverState) === active
+    );
+    activate(activeButton, "[data-cover-state]");
+    stateButtons.forEach((button) =>
+      button.setAttribute("aria-pressed", String(button === activeButton))
+    );
+  }
 
   function layout(index, animate = true) {
     active = (index + covers.length) % covers.length;
+    syncStateButtons();
 
     covers.forEach((cover, coverIndex) => {
       const delta = coverIndex - active;
@@ -696,7 +708,13 @@ if (demo === "coverflow") {
       runAnimation(
         cover,
         [
-          { transform: getComputedStyle(cover).transform === "none" ? cover.style.transform || transform : getComputedStyle(cover).transform, opacity: getComputedStyle(cover).opacity },
+          {
+            transform:
+              getComputedStyle(cover).transform === "none"
+                ? cover.style.transform || transform
+                : getComputedStyle(cover).transform,
+            opacity: getComputedStyle(cover).opacity
+          },
           { transform, opacity }
         ],
         { duration: 900 }
@@ -707,16 +725,35 @@ if (demo === "coverflow") {
     });
   }
 
-  document.querySelector("[data-prev]")?.addEventListener("click", () => layout(active - 1));
-  document.querySelector("[data-next]")?.addEventListener("click", () => layout(active + 1));
+  stateButtons.forEach((button) =>
+    button.addEventListener("click", () =>
+      layout(Number(button.dataset.coverState))
+    )
+  );
+
+  covers.forEach((cover, index) =>
+    cover.addEventListener("click", () => layout(index))
+  );
+
+  document.querySelector("[data-prev]")?.addEventListener(
+    "click",
+    () => layout(active - 1)
+  );
+  document.querySelector("[data-next]")?.addEventListener(
+    "click",
+    () => layout(active + 1)
+  );
+
   replay?.addEventListener("click", async () => {
     layout(0, false);
     await nextFrame();
+
     for (let index = 1; index < covers.length; index += 1) {
       layout(index);
       await new Promise((resolve) => setTimeout(resolve, 780));
     }
   });
+
   layout(active, false);
 }
 
