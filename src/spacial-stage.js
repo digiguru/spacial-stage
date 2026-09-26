@@ -1025,6 +1025,31 @@ export function createPlacementController(
         spec.slot.style.height = `${trimNumber(height)}px`;
       }
 
+      const settledTarget = measure(name);
+
+      if (settledTarget.type === "flow") {
+        const overlayContainer =
+          source?.type === "absolute"
+            ? source.container
+            : firstAbsoluteContainer();
+        const overlayMeasured = {
+          ...settledTarget,
+          type: "absolute",
+          container: overlayContainer,
+          spec: {
+            ...settledTarget.spec,
+            container: overlayContainer,
+            style: settledTarget.spec.overlayStyle || {}
+          }
+        };
+
+        applyAbsolute(overlayMeasured);
+        element.style.rotate = "0deg";
+      } else {
+        applyAbsolute(settledTarget);
+        element.style.rotate = "0deg";
+      }
+
       const layoutJobs = [];
 
       for (const root of layoutRoots) {
@@ -1040,26 +1065,26 @@ export function createPlacementController(
 
       await Promise.all([
         ...layoutJobs,
-        animateFlip(element, fromRect, target.rect, {
+        animateFlip(element, fromRect, settledTarget.rect, {
           duration,
           easing,
           reducedMotion,
           fromRotate,
-          toRotate,
+          toRotate: settledTarget.rotateZ || 0,
           origin: "center"
         })
       ]);
 
-      if (target.type === "flow") {
-        applyFlow(target);
+      if (settledTarget.type === "flow") {
+        applyFlow(settledTarget);
         collapseOtherFlowSlots(name);
       } else {
-        applyAbsolute(target);
+        applyAbsolute(settledTarget);
         collapseOtherFlowSlots();
       }
 
       currentName = name;
-      return target;
+      return settledTarget;
     } finally {
       running = false;
     }
