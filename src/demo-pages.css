@@ -169,7 +169,7 @@ a { color:inherit; }
 }
 .lab-cell h3 { margin:0 0 6px; font-size:13px; }
 .lab-cell p { margin:0; color:rgba(255,255,255,.5); font-size:9px; line-height:1.45; }
-.absolute-lab-object { position:absolute; }
+.absolute-lab-object { position:absolute; left:0; top:0; }
 .alignment-stage::before,
 .alignment-stage::after {
   content:""; position:absolute; pointer-events:none; opacity:.25;
