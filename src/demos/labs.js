@@ -253,42 +253,40 @@ if (demo === "size") {
 if (demo === "rotation") {
   const object = stageObject();
   prepareFrameworkObject(object);
-  const buttons = [...document.querySelectorAll("[data-angle]")];
-  let current = 0;
+  const buttons = [...document.querySelectorAll("[data-state-target]")];
 
-  async function go(angle) {
-    const from = normaliseSpec({
+  function spec(value) {
+    return normaliseSpec({
       animations: ["slide"],
       horizontalAnchor: "center",
       verticalAnchor: "center",
-      rotateZ: current,
+      rotateZ: Number(value),
       duration: 1400
     });
-    const to = normaliseSpec({ ...from, rotateZ: angle });
-    current = angle;
-    activate(buttons.find((button) => Number(button.dataset.angle) === angle), "[data-angle]");
-    await animateBetweenStates(object, stage, from, to);
   }
 
+  const navigator = createStateNavigator({
+    initial: "0",
+    buttons,
+    selector: "[data-state-target]",
+    apply(name) {
+      applyFrame(object, destinationFrame(object, stage, spec(name)));
+    },
+    transition(from, to) {
+      return animateBetweenStates(object, stage, spec(from), spec(to));
+    }
+  });
+
   buttons.forEach((button) =>
-    button.addEventListener("click", () => void go(Number(button.dataset.angle)))
+    button.addEventListener("click", () =>
+      void navigator.go(button.dataset.stateTarget)
+    )
   );
+
   replay?.addEventListener("click", async () => {
-    current = -90;
-    applyFrame(
-      object,
-      destinationFrame(
-        object,
-        stage,
-        normaliseSpec({
-          horizontalAnchor: "center",
-          verticalAnchor: "center",
-          rotateZ: -90
-        })
-      )
-    );
+    await navigator.go("-90", { animate: false });
     await nextFrame();
-    await go(270);
+    await navigator.go("180");
   });
 }
 
