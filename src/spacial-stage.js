@@ -597,14 +597,17 @@ export function captureLayoutRect(element) {
   if (!element?.getBoundingClientRect) return null;
 
   const previousTransform = element.style.transform;
+  const previousRotate = element.style.rotate;
   const previousTransformOrigin = element.style.transformOrigin;
 
   element.style.transform = "none";
+  element.style.rotate = "0deg";
   element.style.transformOrigin = "top left";
 
   const rect = captureRect(element);
 
   element.style.transform = previousTransform;
+  element.style.rotate = previousRotate;
   element.style.transformOrigin = previousTransformOrigin;
 
   return rect;
@@ -713,6 +716,7 @@ export function createPlacementController(
       bottom: "auto",
       margin: `${trimNumber(gapBefore)}px 0 ${trimNumber(gapAfter)}px`,
       transform: "none",
+      rotate: `${trimNumber(finiteNumber(spec.rotateZ, 0))}deg`,
       transformOrigin: spec.transformOrigin || "center center",
       flex: "0 0 auto",
       ...(spec.style || {})
@@ -730,7 +734,8 @@ export function createPlacementController(
       visibility: "hidden",
       pointerEvents: "none",
       transition: "none",
-      animation: "none"
+      animation: "none",
+      rotate: "0deg"
     });
 
     spec.slot.append(clone);
@@ -833,6 +838,7 @@ export function createPlacementController(
       height: `${trimNumber(rect.height)}px`,
       margin: "0",
       transform: "none",
+      rotate: `${trimNumber(finiteNumber(spec.rotateZ, 0))}deg`,
       transformOrigin: spec.transformOrigin || "center center",
       ...(spec.style || {})
     });
@@ -905,6 +911,7 @@ export function createPlacementController(
         };
 
         applyAbsolute(overlayMeasured);
+        element.style.rotate = "0deg";
 
         jobs.push(
           animateFlowSpace(
@@ -916,6 +923,7 @@ export function createPlacementController(
         );
       } else {
         applyAbsolute(target);
+        element.style.rotate = "0deg";
       }
 
       if (source?.type === "flow" && source.slot !== target.slot) {
