@@ -442,10 +442,10 @@ inner.animate(
     const depth = [18, 34, 58][index];
 
     layer.style.transform =
-      `translate(-50%, -50%)
+      \`translate(-50%, -50%)
        translate3d(\${x * depth}px, \${y * depth}px, \${index * 55}px)
        rotateX(\${-y * 8}deg)
-       rotateY(\${x * 10}deg)`;
+       rotateY(\${x * 10}deg)\`;
   });
 });`
   },
@@ -473,9 +473,9 @@ inner.animate(
   const distance = Math.abs(delta);
 
   cover.style.transform =
-    `translate3d(\${delta * 118}px, \${distance * 8}px, \${distance ? -distance * 75 : 120}px)
+    \`translate3d(\${delta * 118}px, \${distance * 8}px, \${distance ? -distance * 75 : 120}px)
      rotateY(\${delta < 0 ? 58 : delta > 0 ? -58 : 0}deg)
-     scale(\${distance ? .86 : 1.08})`;
+     scale(\${distance ? .86 : 1.08})\`;
 });`
   },
 
