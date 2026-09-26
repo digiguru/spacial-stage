@@ -29,11 +29,12 @@ function createVisualStateNavigator({
   let pending = null;
 
   function sync(target = current) {
-    activate(
-      buttons.find((button) =>
-        button.dataset.state === target || button.dataset.depth === target
-      ),
-      selector
+    const active = buttons.find((button) =>
+      button.dataset.state === target || button.dataset.depth === target
+    );
+    activate(active, selector);
+    buttons.forEach((button) =>
+      button.setAttribute("aria-pressed", String(button === active))
     );
   }
 
