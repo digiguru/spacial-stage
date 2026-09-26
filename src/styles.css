@@ -72,6 +72,11 @@ summary:focus-visible {
   box-shadow: 0 8px 24px rgba(15,17,15,.15);
 }
 .topbar-actions { gap: 8px; }
+.topbar-link {
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
+}
 
 .button {
   min-height: 42px;
