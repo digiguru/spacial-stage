@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta name="theme-color" content="#171816"/><link rel="icon" href="/brand-mark.svg" type="image/svg+xml"/>
+<link rel="stylesheet" href="/src/demo-pages.css"/>
+<title>Responsive placement · Spacial Stage</title><script type="module" src="/src/demos/labs.js"></script>
+</head>
+<body data-demo="responsive">
+<header class="demo-topbar"><a class="demo-brand" href="/"><img src="/brand-mark.svg" alt="" width="42" height="42"/><span><small>Spacial Stage</small><strong>Responsive placement</strong></span></a><nav class="demo-nav" aria-label="Demo navigation">
+  <a href="/">Playground</a>
+  <a href="/demos/">All demos</a>
+</nav></header>
+<main class="demo-shell">
+<section class="demo-hero"><div><p class="eyebrow">Responsive geometry</p><h1>The same state should survive a different container.</h1></div><p>The object is authored in percentages against a resizable containing block. The destination is recalculated from the actual container rather than frozen pixels.</p></section>
+<section class="demo-panel">
+<div class="demo-toolbar"><p class="lab-note">Resize this page on desktop; on mobile rotate the device. Replay uses the current container dimensions.</p><button class="demo-button demo-button-primary" data-replay>↻ Replay</button></div>
+<div class="lab-stage" data-lab-stage><div class="responsive-frame"><div id="labObject" class="lab-object"></div></div></div>
+
+</section>
+</main></body></html>

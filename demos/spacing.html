@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta name="theme-color" content="#171816"/><link rel="icon" href="/brand-mark.svg" type="image/svg+xml"/>
+<link rel="stylesheet" href="/src/demo-pages.css"/>
+<title>Padding vs margin · Spacial Stage</title><script type="module" src="/src/demos/labs.js"></script>
+</head>
+<body data-demo="spacing">
+<header class="demo-topbar"><a class="demo-brand" href="/"><img src="/brand-mark.svg" alt="" width="42" height="42"/><span><small>Spacial Stage</small><strong>Padding vs margin</strong></span></a><nav class="demo-nav" aria-label="Demo navigation">
+  <a href="/">Playground</a>
+  <a href="/demos/">All demos</a>
+</nav></header>
+<main class="demo-shell">
+<section class="demo-hero"><div><p class="eyebrow">Layout</p><h1>Inside space and outside space move differently.</h1></div><p>Animating padding changes the box's internal geometry. Animating margin changes the space around the element and therefore its relationship to siblings.</p></section>
+<section class="demo-panel">
+<div class="demo-toolbar"><p class="lab-note">Both animate from 8px to 56px vertically / 28px horizontally.</p><button class="demo-button demo-button-primary" data-replay>↻ Replay</button></div>
+<div class="lab-stage spacing-demo" data-lab-stage>
+ <div><h3>Padding</h3><div id="paddingBox" class="spacing-box"><div class="spacing-inner">content</div></div><div class="spacing-sibling">Sibling after padded box</div></div>
+ <div><h3>Margin</h3><div class="spacing-box"><div id="marginInner" class="spacing-inner">content</div></div><div class="spacing-sibling">Sibling after margin box</div></div>
+ </div>
+
+</section>
+</main></body></html>

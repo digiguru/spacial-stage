@@ -178,7 +178,7 @@ Low-level primitives remain available: `captureRect`, `captureLayoutRect`, `rect
 
 A core framework use case is moving one persistent object between **absolute stage space** and **real document flow** while surrounding content makes room for it.
 
-The focused Absolute → Flow demo now uses the placement controller directly. It shows the shared SVG:
+The focused Absolute → Flow demo now uses the placement controller directly and intentionally runs at 1800ms so the layout choreography is easy to inspect. It shows the shared SVG:
 
 - absolutely positioned, blurred and recessed behind foreground text in State 1;
 - tweened into a real slot between paragraph 1 and paragraph 2 in State 2;
@@ -190,14 +190,19 @@ The demo contains no hand-authored destination rectangle maths: its inline recta
 
 ## Focused demo pages
 
-The playground remains the full authoring environment. Separate pages isolate the major capabilities:
+The playground remains the full authoring environment. The demos landing page is now a capability catalogue with focused examples for:
 
-- Absolute → Flow;
-- Composed animations;
-- Geometry;
-- Layout effects;
-- Depth & stacking;
-- 3D transforms.
+- Absolute → Flow and Absolute → Absolute placement;
+- edge alignment and responsive placement;
+- size and rotation;
+- animation curves and speed;
+- Blur vs Focus;
+- composed animations and Reveal vs Collapse;
+- padding vs margin;
+- Stagger & Follow coordination;
+- layout effects and depth/stacking;
+- reduced-motion outcomes;
+- 3D transforms, cube spin, parallax and classic Cover Flow.
 
 This keeps the terminology testable one behaviour at a time while the playground demonstrates complete named states.
 
