@@ -59,9 +59,12 @@ function createStateNavigator({
   let pending = null;
 
   function syncButtons(target = current) {
-    activate(
-      buttons.find((button) => button.dataset.stateTarget === target),
-      selector
+    const active = buttons.find(
+      (button) => button.dataset.stateTarget === target
+    );
+    activate(active, selector);
+    buttons.forEach((button) =>
+      button.setAttribute("aria-pressed", String(button === active))
     );
   }
 
