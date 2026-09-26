@@ -78,6 +78,7 @@ a { color:inherit; }
   opacity:0; transition:opacity 180ms ease;
 }
 [data-mode="inline"] .flow-slot-marker { opacity:1; }
+[data-transitioning] .flow-slot-marker { opacity:0; }
 .hero-svg {
   position:absolute; z-index:1; display:block; width:360px; height:360px; margin:0;
   border:0; background:transparent; transform-origin:top left; will-change:transform,filter,opacity;
