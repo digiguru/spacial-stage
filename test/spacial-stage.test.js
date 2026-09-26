@@ -4,6 +4,7 @@ import assert from "node:assert/strict";
 import {
   cssForElement,
   cssForParent,
+  flipFrames,
   layoutCompanionFrames,
   normaliseSpec,
   positionValuesForCoordinates,
@@ -15,6 +16,23 @@ import {
   sizeValuesForDimensions,
   transitionFrames
 } from "../src/spacial-stage.js";
+
+test("FLIP frames map a source rectangle onto a destination rectangle", () => {
+  const frames = flipFrames(
+    { left: 20, top: 30, width: 100, height: 50 },
+    { left: 220, top: 130, width: 200, height: 100 }
+  );
+
+  assert.equal(frames.length, 2);
+  assert.equal(
+    frames[0].transform,
+    "translate3d(-200px, -100px, 0) scale(0.5, 0.5)"
+  );
+  assert.equal(
+    frames[1].transform,
+    "translate3d(0px, 0px, 0) scale(1, 1)"
+  );
+});
 
 test("normalises named-state specs including anchored position and custom vector", () => {
   const spec = normaliseSpec({
