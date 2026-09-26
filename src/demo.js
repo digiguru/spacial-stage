@@ -327,9 +327,9 @@ const DEFAULT_STATES = [
 let model = loadModel();
 let activeStateId = model.activeStateId || model.states[0].id;
 let previousStateId = model.previousStateId || null;
-let selectedObjectId = Object.prototype.hasOwnProperty.call(model, "selectedObjectId")
-  ? model.selectedObjectId
-  : "svg";
+let selectedObjectId = model.selectedObjectId === null
+  ? null
+  : (OBJECTS[model.selectedObjectId] ? model.selectedObjectId : "svg");
 let isAnimating = false;
 let formSyncing = false;
 let replayTimer = null;
@@ -434,7 +434,13 @@ function renderObjectTabs() {
     button.dataset.objectId = objectId;
     button.classList.toggle("is-active", objectId === selectedObjectId);
     button.innerHTML = `<span>${escapeHtml(object.name)}</span><small>${titleCase(object.role)}</small>`;
-    button.addEventListener("click", () => selectObject(objectId));
+    button.addEventListener("click", () => {
+      if (selectedObjectId === objectId) {
+        deselectObject();
+      } else {
+        selectObject(objectId);
+      }
+    });
     objectTabs.append(button);
   }
 }
@@ -1034,6 +1040,12 @@ function syncSizeInputs(sizeMode) {
 }
 
 function updateZIndexWarning() {
+  if (!selectedObjectId || !OBJECTS[selectedObjectId]) {
+    zIndexWarning.hidden = true;
+    zIndexWarning.textContent = "";
+    return;
+  }
+
   const values = model.states.map((state) => ({
     name: state.name,
     zIndex: normaliseSpec(state.objects[selectedObjectId]).zIndex
@@ -1109,7 +1121,9 @@ function renameActiveState(value) {
   state.name = name || "New State";
   selectedStateName.textContent = state.name;
   stageStateLabel.textContent = state.name;
-  cssTitle.textContent = OBJECTS[selectedObjectId].name + " · " + state.name;
+  cssTitle.textContent = selectedObjectId && OBJECTS[selectedObjectId]
+    ? OBJECTS[selectedObjectId].name + " · " + state.name
+    : "Preview · " + state.name;
 
   const activeTab = stateTabs.querySelector(`[data-state-id="${state.id}"] span`);
   if (activeTab) activeTab.textContent = state.name;
