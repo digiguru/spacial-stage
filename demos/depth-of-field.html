@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta name="theme-color" content="#171816"/><link rel="icon" href="/brand-mark.svg" type="image/svg+xml"/>
+<link rel="stylesheet" href="/src/demo-pages.css"/>
+<title>Depth of field · Spacial Stage</title>
+<script type="module" src="/src/demos/depth-of-field.js"></script>
+<script type="module" src="/src/demos/demo-markup.js"></script>
+</head>
+<body>
+<header class="demo-topbar">
+  <a class="demo-brand" href="/"><img src="/brand-mark.svg" alt="" width="42" height="42"/><span><small>Spacial Stage</small><strong>Depth of field</strong></span></a>
+  <nav class="demo-nav" aria-label="Demo navigation"><a href="/">Playground</a><a href="/demos/">All demos</a><a href="/demos/depth-of-field.html" aria-current="page">Depth of field</a></nav>
+</header>
+
+<main class="demo-shell">
+  <section class="demo-hero">
+    <div><p class="eyebrow">3D focus experiment</p><h1>A plane can have a focal band.</h1></div>
+    <p>The card is one tilted 3D surface, but its visible output is sliced into narrow strips. Each strip receives blur according to its distance from a focus plane, creating a near-soft → sharp → far-soft depth-of-field effect.</p>
+  </section>
+
+  <section class="demo-panel">
+    <div class="demo-toolbar">
+      <div class="state-buttons" aria-label="Focus destination states">
+        <button class="demo-button" data-dof-state="near">Near focus</button>
+        <button class="demo-button is-active" data-dof-state="middle">Middle focus</button>
+        <button class="demo-button" data-dof-state="far">Far focus</button>
+      </div>
+      <button class="demo-button demo-button-primary" id="dofReplay" type="button">↻ Sweep focus</button>
+    </div>
+
+    <div class="dof-demo">
+      <aside class="dof-controls" aria-label="Depth of field controls">
+        <div class="dof-control">
+          <label for="dofFocalLength"><strong>Focal length / perspective</strong><output id="dofFocalLengthValue">850 px</output></label>
+          <input id="dofFocalLength" type="range" min="420" max="1600" step="10" value="850"/>
+          <p>CSS perspective is used as the camera proxy: smaller values exaggerate perspective; larger values flatten it like a longer lens.</p>
+        </div>
+
+        <div class="dof-control">
+          <label for="dofFocusPlane"><strong>Focus plane</strong><output id="dofFocusPlaneValue">0.00</output></label>
+          <input id="dofFocusPlane" type="range" min="-1" max="1" step="0.01" value="0"/>
+          <p>Moves the sharp plane from the near edge, through the middle, to the far edge.</p>
+        </div>
+
+        <div class="dof-control">
+          <label for="dofFocusArea"><strong>Focus area</strong><output id="dofFocusAreaValue">24%</output></label>
+          <input id="dofFocusArea" type="range" min="0.04" max="1.2" step="0.01" value="0.24"/>
+          <p>Controls the depth range that stays completely sharp before blur begins to rise.</p>
+        </div>
+
+        <div class="dof-control">
+          <label for="dofBlur"><strong>Aperture / blur strength</strong><output id="dofBlurValue">14 px</output></label>
+          <input id="dofBlur" type="range" min="0" max="24" step="0.5" value="14"/>
+          <p>A stylised aperture control: larger values make out-of-focus depth fall away more aggressively.</p>
+        </div>
+
+        <div class="dof-control">
+          <label for="dofYaw"><strong>Surface tilt</strong><output id="dofYawValue">58°</output></label>
+          <input id="dofYaw" type="range" min="18" max="72" step="1" value="58"/>
+          <p>More yaw creates more physical Z separation between the near and far edges.</p>
+        </div>
+
+        <div class="dof-profile" aria-label="Current focus profile">
+          <div class="dof-profile-labels"><span>Near</span><span>Depth</span><span>Far</span></div>
+          <div class="dof-profile-track">
+            <div id="dofProfileBand" class="dof-profile-band"></div>
+            <div id="dofProfilePlane" class="dof-profile-plane"></div>
+          </div>
+        </div>
+      </aside>
+
+      <div class="dof-stage" id="dofStage">
+        <div class="dof-scene" id="dofScene">
+          <div class="dof-card" id="dofCard" role="img" aria-label="Tilted card reading Depth can be selective. The middle of one 3D surface can remain sharp while its near and far edges fall out of focus.">
+            <div id="dofSlices" class="dof-slices" aria-hidden="true"></div>
+          </div>
+        </div>
+        <div class="dof-stage-note">
+          <strong>Not a flat blur overlay.</strong>
+          <span>Each vertical strip gets its own blur from its estimated Z-depth.</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="demo-caption">
+      <article><strong>Focal length</strong><p>Changes perspective strength. It affects the camera look, not which depth is sharp.</p></article>
+      <article><strong>Focus plane + area</strong><p>Define where sharp focus sits and how much depth remains fully in focus.</p></article>
+      <article><strong>Depth slices</strong><p>A practical DOM approximation until the framework has a shader or true per-pixel depth map.</p></article>
+    </div>
+  </section>
+</main>
+</body>
+</html>

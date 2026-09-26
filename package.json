@@ -15,7 +15,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "test": "node --test test/*.test.js",
-    "check": "node --check src/spacial-stage.js && node --check src/demo.js && node --check src/demos/absolute-to-flow.js && node --check src/demos/focused.js && node --check src/demos/labs.js && node --check src/demos/demo-markup.js"
+    "check": "node --check src/spacial-stage.js && node --check src/demo.js && node --check src/demos/absolute-to-flow.js && node --check src/demos/focused.js && node --check src/demos/labs.js && node --check src/demos/demo-markup.js && node --check src/demos/depth-of-field.js"
   },
   "engines": {
     "node": ">=24"

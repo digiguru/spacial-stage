@@ -28,7 +28,8 @@ export default defineConfig({
         staggerFollow: resolve(process.cwd(), "demos/stagger-follow.html"),
         revealCollapse: resolve(process.cwd(), "demos/reveal-collapse.html"),
         responsivePlacement: resolve(process.cwd(), "demos/responsive-placement.html"),
-        reducedMotion: resolve(process.cwd(), "demos/reduced-motion.html")
+        reducedMotion: resolve(process.cwd(), "demos/reduced-motion.html"),
+        depthOfField: resolve(process.cwd(), "demos/depth-of-field.html")
       }
     }
   }
