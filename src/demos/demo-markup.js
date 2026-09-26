@@ -1,7 +1,7 @@
 const snippets = {
   "absolute-to-flow": {
     note: "Framework-backed. The browser measures the real inline destination; application code only describes placement intent.",
-    html: \`<section id="stage">
+    html: `<section id="stage">
   <article>
     <h2>Title</h2>
     <p>First paragraph…</p>
@@ -14,8 +14,8 @@ const snippets = {
   <div id="visual">
     <svg viewBox="0 0 320 320">…</svg>
   </div>
-</section>\`,
-    js: \`import { createPlacementController } from "@digiguru/spacial-stage";
+</section>`,
+    js: `import { createPlacementController } from "@digiguru/spacial-stage";
 
 const placement = createPlacementController(
   document.querySelector("#visual"),
@@ -49,15 +49,15 @@ const placement = createPlacementController(
   }
 );
 
-await placement.transition("inline");\`
+await placement.transition("inline");`
   },
 
   "composed-animations": {
     note: "Framework concept: animations are a set, so Slide/Fade/Reveal/Focus/Collapse can be combined.",
-    html: \`<div id="stage">
+    html: `<div id="stage">
   <div id="card">Card</div>
-</div>\`,
-    js: \`import {
+</div>`,
+    js: `import {
   animateBetweenStates,
   normaliseSpec
 } from "@digiguru/spacial-stage";
@@ -75,15 +75,15 @@ const to = normaliseSpec({
   duration: 900
 });
 
-await animateBetweenStates(card, stage, from, to);\`
+await animateBetweenStates(card, stage, from, to);`
   },
 
   geometry: {
     note: "Framework-backed destination geometry: position, size, scale and rotation live in state.",
-    html: \`<div id="stage">
+    html: `<div id="stage">
   <div id="object"></div>
-</div>\`,
-    js: \`import {
+</div>`,
+    js: `import {
   animateBetweenStates,
   normaliseSpec
 } from "@digiguru/spacial-stage";
@@ -111,16 +111,16 @@ const b = normaliseSpec({
   rotateZ: 24
 });
 
-await animateBetweenStates(object, stage, a, b);\`
+await animateBetweenStates(object, stage, a, b);`
   },
 
   "layout-effects": {
     note: "Layout effect is separate from the object's own animation. This example shows Push.",
-    html: \`<div id="stage">
+    html: `<div id="stage">
   <aside id="panel"></aside>
   <main id="content">Neighbouring content</main>
-</div>\`,
-    js: \`import {
+</div>`,
+    js: `import {
   animateBetweenStates,
   layoutCompanionFrames,
   normaliseSpec
@@ -138,16 +138,16 @@ content.animate(
   { duration: panelState.duration, easing: panelState.easing }
 );
 
-await animateBetweenStates(panel, stage, {}, panelState);\`
+await animateBetweenStates(panel, stage, {}, panelState);`
   },
 
   "depth-stacking": {
     note: "Depth controls visual softness; z-index remains an explicit, independent destination property.",
-    html: \`<div id="stage">
+    html: `<div id="stage">
   <div id="back"></div>
   <div id="front"></div>
-</div>\`,
-    js: \`import {
+</div>`,
+    js: `import {
   destinationFrame,
   normaliseSpec
 } from "@digiguru/spacial-stage";
@@ -163,15 +163,15 @@ const sharp = normaliseSpec({
 });
 
 Object.assign(back.style, destinationFrame(back, stage, recessed));
-Object.assign(front.style, destinationFrame(front, stage, sharp));\`
+Object.assign(front.style, destinationFrame(front, stage, sharp));`
   },
 
   "3d-transforms": {
     note: "Framework-backed single-plane 3D transforms.",
-    html: \`<div id="stage">
+    html: `<div id="stage">
   <div id="card"></div>
-</div>\`,
-    js: \`import {
+</div>`,
+    js: `import {
   animateBetweenStates,
   normaliseSpec
 } from "@digiguru/spacial-stage";
@@ -193,17 +193,17 @@ const tilted = normaliseSpec({
   perspective: 650
 });
 
-await animateBetweenStates(card, stage, front, tilted);\`
+await animateBetweenStates(card, stage, front, tilted);`
   },
 
   "easing-curves": {
     note: "Browser Web Animations demo. Only easing changes; duration and distance stay constant.",
-    html: \`<div class="track">
+    html: `<div class="track">
   <div class="runner"></div>
-</div>\`,
-    css: \`.track { position: relative; }
-.runner { position: absolute; left: 0; }\`,
-    js: \`runner.animate(
+</div>`,
+    css: `.track { position: relative; }
+.runner { position: absolute; left: 0; }`,
+    js: `runner.animate(
   [
     { transform: "translateX(0)" },
     { transform: "translateX(400px)" }
@@ -213,15 +213,15 @@ await animateBetweenStates(card, stage, front, tilted);\`
     easing: "cubic-bezier(.2,.82,.24,1)",
     fill: "both"
   }
-);\`
+);`
   },
 
   speed: {
     note: "Browser Web Animations demo. Path and easing stay fixed; only duration changes.",
-    html: \`<div class="track">
+    html: `<div class="track">
   <div class="runner"></div>
-</div>\`,
-    js: \`runner.animate(
+</div>`,
+    js: `runner.animate(
   [
     { transform: "translateX(0)" },
     { transform: "translateX(400px)" }
@@ -231,15 +231,15 @@ await animateBetweenStates(card, stage, front, tilted);\`
     easing: "cubic-bezier(.2,.82,.24,1)",
     fill: "both"
   }
-);\`
+);`
   },
 
   "blur-focus": {
     note: "Framework-backed depth destinations.",
-    html: \`<div id="stage">
+    html: `<div id="stage">
   <div id="object"></div>
-</div>\`,
-    js: \`import {
+</div>`,
+    js: `import {
   animateBetweenStates,
   normaliseSpec
 } from "@digiguru/spacial-stage";
@@ -254,15 +254,15 @@ const focused = normaliseSpec({
   depth: "focus"
 });
 
-await animateBetweenStates(object, stage, blurred, focused);\`
+await animateBetweenStates(object, stage, blurred, focused);`
   },
 
   size: {
     note: "Framework-backed real width/height interpolation — not just transform scale.",
-    html: \`<div id="stage">
+    html: `<div id="stage">
   <div id="object"></div>
-</div>\`,
-    js: \`import {
+</div>`,
+    js: `import {
   animateBetweenStates,
   normaliseSpec
 } from "@digiguru/spacial-stage";
@@ -280,15 +280,15 @@ const large = normaliseSpec({
   sizeHeight: 170
 });
 
-await animateBetweenStates(object, stage, small, large);\`
+await animateBetweenStates(object, stage, small, large);`
   },
 
   rotation: {
     note: "Framework-backed Rotate Z destination geometry.",
-    html: \`<div id="stage">
+    html: `<div id="stage">
   <div id="object">TOP ↑</div>
-</div>\`,
-    js: \`import {
+</div>`,
+    js: `import {
   animateBetweenStates,
   normaliseSpec
 } from "@digiguru/spacial-stage";
@@ -303,15 +303,15 @@ const to = normaliseSpec({
   rotateZ: 270
 });
 
-await animateBetweenStates(object, stage, from, to);\`
+await animateBetweenStates(object, stage, from, to);`
   },
 
   "absolute-to-absolute": {
     note: "Framework-backed stage-space transition between two absolute destinations.",
-    html: \`<div id="stage">
+    html: `<div id="stage">
   <div id="object"></div>
-</div>\`,
-    js: \`import {
+</div>`,
+    js: `import {
   animateBetweenStates,
   normaliseSpec
 } from "@digiguru/spacial-stage";
@@ -332,15 +332,15 @@ const b = normaliseSpec({
   positionY: -28
 });
 
-await animateBetweenStates(object, stage, a, b);\`
+await animateBetweenStates(object, stage, a, b);`
   },
 
   alignment: {
     note: "Framework-backed edge anchors. Change the anchor pair rather than calculating pixel coordinates.",
-    html: \`<div id="stage">
+    html: `<div id="stage">
   <div id="object"></div>
-</div>\`,
-    js: \`import {
+</div>`,
+    js: `import {
   animateBetweenStates,
   normaliseSpec
 } from "@digiguru/spacial-stage";
@@ -362,16 +362,16 @@ const right = normaliseSpec({
 
 await animateBetweenStates(object, stage, top, right);
 
-// Repeat with bottom + left destinations.\`
+// Repeat with bottom + left destinations.`
   },
 
   spacing: {
     note: "Browser layout demo. Padding changes internal box geometry; margin changes surrounding space.",
-    html: \`<div class="box">
+    html: `<div class="box">
   <div id="inner">content</div>
 </div>
-<div class="sibling">Sibling</div>\`,
-    js: \`// Padding
+<div class="sibling">Sibling</div>`,
+    js: `// Padding
 box.animate(
   [{ padding: "8px" }, { padding: "56px 28px" }],
   { duration: 1800, fill: "both" }
@@ -381,12 +381,12 @@ box.animate(
 inner.animate(
   [{ margin: "8px" }, { margin: "56px 28px" }],
   { duration: 1800, fill: "both" }
-);\`
+);`
   },
 
   "cube-spin": {
     note: "Experimental browser 3D. This is a useful target for a future group/layer abstraction.",
-    html: \`<div class="scene">
+    html: `<div class="scene">
   <div class="cube">
     <div class="face front">front</div>
     <div class="face back">back</div>
@@ -395,8 +395,8 @@ inner.animate(
     <div class="face top">top</div>
     <div class="face bottom">bottom</div>
   </div>
-</div>\`,
-    css: \`.scene { perspective: 800px; }
+</div>`,
+    css: `.scene { perspective: 800px; }
 .cube {
   width: 140px;
   height: 140px;
@@ -409,31 +409,31 @@ inner.animate(
 .right  { transform: rotateY(90deg) translateZ(70px); }
 .left   { transform: rotateY(-90deg) translateZ(70px); }
 .top    { transform: rotateX(90deg) translateZ(70px); }
-.bottom { transform: rotateX(-90deg) translateZ(70px); }\`,
-    js: \`cube.animate(
+.bottom { transform: rotateX(-90deg) translateZ(70px); }`,
+    js: `cube.animate(
   [
     { transform: "rotateX(-18deg) rotateY(-25deg)" },
     { transform: "rotateX(342deg) rotateY(695deg) rotateZ(180deg)" }
   ],
   { duration: 3600, easing: "cubic-bezier(.22,.75,.18,1)" }
-);\`
+);`
   },
 
   parallax: {
     note: "Experimental browser 3D. Each layer responds by a different depth multiplier.",
-    html: \`<div id="scene">
+    html: `<div id="scene">
   <div class="layer back"></div>
   <div class="layer middle"></div>
   <div class="layer front">FOCUS</div>
-</div>\`,
-    css: \`#scene { perspective: 900px; }
+</div>`,
+    css: `#scene { perspective: 900px; }
 .layer {
   position: absolute;
   left: 50%;
   top: 50%;
   transform-style: preserve-3d;
-}\`,
-    js: \`scene.addEventListener("pointermove", (event) => {
+}`,
+    js: `scene.addEventListener("pointermove", (event) => {
   const rect = scene.getBoundingClientRect();
   const x = ((event.clientX - rect.left) / rect.width - .5) * 2;
   const y = ((event.clientY - rect.top) / rect.height - .5) * 2;
@@ -442,17 +442,17 @@ inner.animate(
     const depth = [18, 34, 58][index];
 
     layer.style.transform =
-      \`translate(-50%, -50%)
+      `translate(-50%, -50%)
        translate3d(\${x * depth}px, \${y * depth}px, \${index * 55}px)
        rotateX(\${-y * 8}deg)
-       rotateY(\${x * 10}deg)\`;
+       rotateY(\${x * 10}deg)`;
   });
-});\`
+});`
   },
 
   "cover-flow": {
     note: "Experimental browser 3D inspired by classic iTunes Cover Flow.",
-    html: \`<div class="scene">
+    html: `<div class="scene">
   <div class="coverflow">
     <div class="cover">One</div>
     <div class="cover">Two</div>
@@ -460,34 +460,34 @@ inner.animate(
     <div class="cover">Four</div>
     <div class="cover">Five</div>
   </div>
-</div>\`,
-    css: \`.scene { perspective: 1000px; }
+</div>`,
+    css: `.scene { perspective: 1000px; }
 .coverflow { transform-style: preserve-3d; }
 .cover {
   position: absolute;
   left: 50%;
   transform-style: preserve-3d;
-}\`,
-    js: \`covers.forEach((cover, index) => {
+}`,
+    js: `covers.forEach((cover, index) => {
   const delta = index - activeIndex;
   const distance = Math.abs(delta);
 
   cover.style.transform =
-    \`translate3d(\${delta * 118}px, \${distance * 8}px, \${distance ? -distance * 75 : 120}px)
+    `translate3d(\${delta * 118}px, \${distance * 8}px, \${distance ? -distance * 75 : 120}px)
      rotateY(\${delta < 0 ? 58 : delta > 0 ? -58 : 0}deg)
-     scale(\${distance ? .86 : 1.08})\`;
-});\`
+     scale(\${distance ? .86 : 1.08})`;
+});`
   },
 
   "stagger-follow": {
     note: "Collection coordination. The same keyframes are reused with an increasing delay.",
-    html: \`<div id="cards">
+    html: `<div id="cards">
   <article class="card"></article>
   <article class="card"></article>
   <article class="card"></article>
   <article class="card"></article>
-</div>\`,
-    js: \`document.querySelectorAll(".card").forEach((card, index) => {
+</div>`,
+    js: `document.querySelectorAll(".card").forEach((card, index) => {
   card.animate(
     [
       { transform: "translateY(70px)", opacity: 0 },
@@ -500,14 +500,14 @@ inner.animate(
       fill: "both"
     }
   );
-});\`
+});`
   },
 
   "reveal-collapse": {
     note: "Two independent effects: Reveal uses clipping; Collapse uses directional compression.",
-    html: \`<div id="reveal"></div>
-<div id="collapse"></div>\`,
-    js: \`reveal.animate(
+    html: `<div id="reveal"></div>
+<div id="collapse"></div>`,
+    js: `reveal.animate(
   [
     { clipPath: "inset(0 100% 0 0)" },
     { clipPath: "inset(0 0 0 0)" }
@@ -521,15 +521,15 @@ collapse.animate(
     { transform: "scaleX(1)", transformOrigin: "left center" }
   ],
   { duration: 1500, fill: "both" }
-);\`
+);`
   },
 
   "responsive-placement": {
     note: "Framework-backed responsive geometry: values are percentages of the current containing block.",
-    html: \`<div id="frame">
+    html: `<div id="frame">
   <div id="object"></div>
-</div>\`,
-    js: \`import {
+</div>`,
+    js: `import {
   animateBetweenStates,
   normaliseSpec
 } from "@digiguru/spacial-stage";
@@ -554,13 +554,13 @@ const b = normaliseSpec({
   positionY: -8
 });
 
-await animateBetweenStates(object, frame, a, b);\`
+await animateBetweenStates(object, frame, a, b);`
   },
 
   "reduced-motion": {
     note: "Same semantic destination, different presentation outcome.",
-    html: \`<div id="object"></div>\`,
-    js: \`import {
+    html: `<div id="object"></div>`,
+    js: `import {
   animateBetweenStates,
   destinationFrame,
   normaliseSpec,
@@ -577,7 +577,7 @@ if (prefersReducedMotion()) {
   Object.assign(object.style, destinationFrame(object, stage, to));
 } else {
   await animateBetweenStates(object, stage, from, to);
-}\`
+}`
   }
 };
 
