@@ -8,7 +8,7 @@ const stateInline = document.querySelector("#stateInline");
 const replayButton = document.querySelector("#replayDemo");
 const replayReverseButton = document.querySelector("#replayReverse");
 
-const DURATION = 900;
+const DURATION = 1800;
 const EASING = "cubic-bezier(.2,.82,.24,1)";
 
 const placement = createPlacementController(svgObject, {
