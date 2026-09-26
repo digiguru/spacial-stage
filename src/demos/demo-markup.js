@@ -530,12 +530,12 @@ inner.animate(
   "reveal-collapse": {
     note: "Two independent effects: Reveal uses clipping; Collapse uses directional compression.",
     html: `<div id="reveal">
-  <h3>Keep the words intact.</h3>
-  <p>Reveal clips an unchanged card and its text.</p>
+  <h3>The same words, two behaviours.</h3>
+  <p>Identical copy makes clipping versus compression visible.</p>
 </div>
 <div id="collapse">
-  <h3>Compress the whole card.</h3>
-  <p>Collapse squashes the content with the geometry.</p>
+  <h3>The same words, two behaviours.</h3>
+  <p>Identical copy makes clipping versus compression visible.</p>
 </div>`,
     js: `reveal.animate(
   [
