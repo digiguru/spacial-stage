@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta name="theme-color" content="#171816"/><link rel="icon" href="/brand-mark.svg" type="image/svg+xml"/>
+<link rel="stylesheet" href="/src/demo-pages.css"/>
+<title>Geometry · Spacial Stage</title><script type="module" src="/src/demos/focused.js"></script>
+</head>
+<body data-demo="geometry">
+<header class="demo-topbar"><a class="demo-brand" href="/"><img src="/brand-mark.svg" alt="" width="42" height="42"/><span><small>Spacial Stage</small><strong>Focused demos</strong></span></a><nav class="demo-nav" aria-label="Demo navigation">
+  <a href="/">Playground</a>
+  <a href="/demos/">Demos</a>
+  <a href="/demos/absolute-to-flow.html">Absolute → Flow</a>
+  <a href="/demos/composed-animations.html">Animations</a>
+  <a href="/demos/geometry.html" aria-current="page">Geometry</a>
+  <a href="/demos/layout-effects.html">Layout</a>
+  <a href="/demos/depth-stacking.html">Depth</a>
+  <a href="/demos/3d-transforms.html">3D</a>
+</nav></header>
+<main class="demo-shell"><section class="demo-hero"><div><p class="eyebrow">Destination model</p><h1>Geometry belongs to state.</h1></div><p>Position, size, scale and rotation are authored as destination properties. The transition simply interpolates between two complete spatial descriptions.</p></section><section class="demo-panel"><div class="demo-toolbar"><div class="state-buttons">
+    <button class="demo-button is-active" data-state="a">State A</button><button class="demo-button" data-state="b">State B</button>
+  </div><button id="focusedReplay" class="demo-button demo-button-primary">↻ Replay A → B</button></div>
+  <div id="focusedStage" class="simple-stage" style="position:relative;display:block;min-height:560px;overflow:hidden"><div id="focusedObject" class="simple-object" style="position:absolute;left:8%;top:13%;width:190px"></div></div>
+  <div class="demo-caption"><article><strong>Anchored position</strong><p>Destinations can be expressed against edges or centre rather than hard-wired transforms.</p></article><article><strong>Size ≠ scale</strong><p>Layout width/height and presentation scale remain separate.</p></article><article><strong>Rotation is geometry</strong><p>Rotate Z/X/Y can interpolate with position and size when Slide is enabled.</p></article></div></section></main>
+</body></html>

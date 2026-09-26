@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta name="theme-color" content="#171816"/><link rel="icon" href="/brand-mark.svg" type="image/svg+xml"/>
+<link rel="stylesheet" href="/src/demo-pages.css"/>
+<title>3D transforms · Spacial Stage</title><script type="module" src="/src/demos/focused.js"></script>
+</head>
+<body data-demo="3d">
+<header class="demo-topbar"><a class="demo-brand" href="/"><img src="/brand-mark.svg" alt="" width="42" height="42"/><span><small>Spacial Stage</small><strong>Focused demos</strong></span></a><nav class="demo-nav" aria-label="Demo navigation">
+  <a href="/">Playground</a>
+  <a href="/demos/">Demos</a>
+  <a href="/demos/absolute-to-flow.html">Absolute → Flow</a>
+  <a href="/demos/composed-animations.html">Animations</a>
+  <a href="/demos/geometry.html">Geometry</a>
+  <a href="/demos/layout-effects.html">Layout</a>
+  <a href="/demos/depth-stacking.html">Depth</a>
+  <a href="/demos/3d-transforms.html" aria-current="page">3D</a>
+</nav></header>
+<main class="demo-shell"><section class="demo-hero"><div><p class="eyebrow">Spatial transforms</p><h1>One plane can tilt in space.</h1></div><p>Rotate X/Y/Z, Translate Z and Perspective participate in the same state transition model before introducing a full child-layer scene graph.</p></section><section class="demo-panel"><div class="demo-toolbar"><div class="state-buttons"><button class="demo-button is-active" data-state="front">Front</button><button class="demo-button" data-state="tilt">Tilted</button></div><button id="focusedReplay" class="demo-button demo-button-primary">↻ Replay</button></div>
+  <div class="simple-stage" style="perspective:850px"><div id="focusedObject" class="simple-object" style="transform-style:preserve-3d"></div></div>
+  <div class="demo-caption"><article><strong>Rotate X/Y</strong><p>Pitch and yaw the whole object in local 3D space.</p></article><article><strong>Translate Z</strong><p>Move toward or away from the viewer independently from z-index.</p></article><article><strong>Perspective</strong><p>Controls camera distance and the strength of spatial distortion.</p></article></div></section></main>
+</body></html>

@@ -433,6 +433,139 @@ export function layoutCompanionFrames(specInput = {}) {
 
 export const buildLayoutFrames = layoutCompanionFrames;
 
+export function captureRect(element) {
+  if (!element?.getBoundingClientRect) return null;
+
+  const rect = element.getBoundingClientRect();
+  return {
+    left: rect.left,
+    top: rect.top,
+    width: rect.width,
+    height: rect.height,
+    right: rect.right,
+    bottom: rect.bottom
+  };
+}
+
+export function rectRelativeTo(rect, container) {
+  if (!rect) return null;
+
+  const containerRect = container?.getBoundingClientRect
+    ? container.getBoundingClientRect()
+    : { left: 0, top: 0 };
+
+  return {
+    left: rect.left - containerRect.left,
+    top: rect.top - containerRect.top,
+    width: rect.width,
+    height: rect.height
+  };
+}
+
+export function flipFrames(fromRect, toRect) {
+  if (!fromRect || !toRect) return [];
+
+  const safeWidth = Math.max(0.0001, toRect.width);
+  const safeHeight = Math.max(0.0001, toRect.height);
+  const deltaX = fromRect.left - toRect.left;
+  const deltaY = fromRect.top - toRect.top;
+  const scaleX = Math.max(0.0001, fromRect.width / safeWidth);
+  const scaleY = Math.max(0.0001, fromRect.height / safeHeight);
+
+  return [
+    {
+      transformOrigin: "top left",
+      transform: `translate3d(${trimNumber(deltaX)}px, ${trimNumber(deltaY)}px, 0) scale(${trimNumber(scaleX)}, ${trimNumber(scaleY)})`
+    },
+    {
+      transformOrigin: "top left",
+      transform: "translate3d(0px, 0px, 0) scale(1, 1)"
+    }
+  ];
+}
+
+export async function animateFlip(
+  element,
+  fromRect,
+  toRect,
+  {
+    duration = 700,
+    easing = "cubic-bezier(.2,.82,.24,1)",
+    reducedMotion = prefersReducedMotion()
+  } = {}
+) {
+  if (!element || !fromRect || !toRect) return null;
+
+  const frames = flipFrames(fromRect, toRect);
+
+  if (
+    reducedMotion
+    || typeof element.animate !== "function"
+    || frames.length < 2
+  ) {
+    return null;
+  }
+
+  const animation = element.animate(frames, {
+    duration,
+    easing,
+    fill: "both"
+  });
+
+  try {
+    await animation.finished;
+  } catch {}
+
+  animation.cancel();
+  return animation;
+}
+
+export async function animateFlowSpace(
+  slot,
+  fromHeight,
+  toHeight,
+  {
+    duration = 700,
+    easing = "cubic-bezier(.2,.82,.24,1)",
+    reducedMotion = prefersReducedMotion()
+  } = {}
+) {
+  if (!slot) return null;
+
+  const start = Math.max(0, finiteNumber(fromHeight, 0));
+  const end = Math.max(0, finiteNumber(toHeight, 0));
+
+  if (
+    reducedMotion
+    || typeof slot.animate !== "function"
+    || start === end
+  ) {
+    slot.style.height = `${trimNumber(end)}px`;
+    return null;
+  }
+
+  slot.style.height = `${trimNumber(end)}px`;
+  const animation = slot.animate(
+    [
+      { height: `${trimNumber(start)}px` },
+      { height: `${trimNumber(end)}px` }
+    ],
+    {
+      duration,
+      easing,
+      fill: "both"
+    }
+  );
+
+  try {
+    await animation.finished;
+  } catch {}
+
+  animation.cancel();
+  slot.style.height = `${trimNumber(end)}px`;
+  return animation;
+}
+
 export function applyFrame(element, frame) {
   if (!element || !frame) return;
 

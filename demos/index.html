@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#171816" />
+    <link rel="icon" href="/brand-mark.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/src/demo-pages.css" />
+    <title>Demos · Spacial Stage</title>
+  </head>
+  <body>
+    <header class="demo-topbar">
+      <a class="demo-brand" href="/">
+        <img src="/brand-mark.svg" alt="" width="42" height="42" />
+        <span><small>Spacial Stage</small><strong>Focused demos</strong></span>
+      </a>
+      <nav class="demo-nav" aria-label="Demo navigation">
+        <a href="/">Playground</a>
+        <a href="/demos/" aria-current="page">Demos</a>
+        <a href="/demos/absolute-to-flow.html">Absolute → Flow</a>
+        <a href="/demos/composed-animations.html">Animations</a>
+        <a href="/demos/geometry.html">Geometry</a>
+        <a href="/demos/layout-effects.html">Layout</a>
+        <a href="/demos/depth-stacking.html">Depth</a>
+        <a href="/demos/3d-transforms.html">3D</a>
+      </nav>
+    </header>
+    <main class="demo-shell">
+      <section class="demo-hero">
+        <div>
+          <p class="eyebrow">Examples, one idea at a time</p>
+          <h1>Focused demos.</h1>
+        </div>
+        <p>Use the playground to author complete named states. Use these pages to isolate one part of the framework and see the behaviour without the rest of the inspector around it.</p>
+      </section>
+      <section class="demo-index-grid">
+        <a class="demo-card" href="/demos/absolute-to-flow.html"><span>Core</span><h2>Absolute → Flow</h2><p>Tween one persistent object from absolute stage space into a real inline slot that pushes surrounding content apart.</p></a>
+        <a class="demo-card" href="/demos/composed-animations.html"><span>Motion</span><h2>Composed animations</h2><p>See Slide, Fade, Reveal, Focus and Collapse combine independently rather than acting as mutually exclusive presets.</p></a>
+        <a class="demo-card" href="/demos/geometry.html"><span>Destination</span><h2>Geometry</h2><p>Position, size, anchors, scale and rotation as state-owned destination geometry.</p></a>
+        <a class="demo-card" href="/demos/layout-effects.html"><span>Layout</span><h2>Layout effects</h2><p>Compare Overlay, Push, Replace and Reflow as companion behaviours around an independently animated object.</p></a>
+        <a class="demo-card" href="/demos/depth-stacking.html"><span>Presentation</span><h2>Depth & stacking</h2><p>Keep visual softness separate from explicit z-index and make stacking changes visible.</p></a>
+        <a class="demo-card" href="/demos/3d-transforms.html"><span>Spatial</span><h2>3D transforms</h2><p>Rotate X/Y/Z, Translate Z and Perspective with the same state-to-state interpolation model.</p></a>
+      </section>
+    </main>
+  </body>
+</html>

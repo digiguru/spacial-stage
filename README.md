@@ -4,6 +4,8 @@ A small framework-neutral motion grammar for spatial interfaces.
 
 **Live playground:** https://spacial-stage.vercel.app/
 
+**Focused demos:** https://spacial-stage.vercel.app/demos/
+
 The project is deliberately both **library** and **terminology lab**. The playground lets you author named UI states, select individual objects, configure how each object behaves in each state, switch between states, and inspect the concrete CSS implied by the semantic choices.
 
 > The repository name is `spacial-stage` as requested. The interaction pattern itself is described in the UI as a “spatial stage”.
@@ -115,6 +117,33 @@ For the panel example:
 The current playground therefore treats Push as a temporary "make room while this arrives" gesture, not persistent reflow.
 
 Layout effects are currently coordinated globally per state transition. If several objects request non-Overlay layout effects at once, the playground prefers the panel's layout effect; if there is no panel candidate, it uses the first non-Overlay request. Individual object animations still run independently.
+
+## Absolute ↔ flow transitions
+
+A core framework use case is moving one persistent object between **absolute stage space** and **real document flow** while surrounding content makes room for it.
+
+The focused Absolute → Flow demo shows the shared SVG:
+
+- absolutely positioned, blurred and recessed behind foreground text in State 1;
+- tweened into a real slot between paragraph 1 and paragraph 2 in State 2;
+- with paragraph 1 determining the destination top edge;
+- with the SVG's measured rendered height determining how much flow space opens;
+- with paragraph 2 moving because the slot height changes, not because paragraph 2 receives an arbitrary transform.
+
+The framework exposes `captureRect`, `rectRelativeTo`, `flipFrames`, `animateFlip`, and `animateFlowSpace` as reusable primitives for this FLIP + flow-space pattern.
+
+## Focused demo pages
+
+The playground remains the full authoring environment. Separate pages isolate the major capabilities:
+
+- Absolute → Flow;
+- Composed animations;
+- Geometry;
+- Layout effects;
+- Depth & stacking;
+- 3D transforms.
+
+This keeps the terminology testable one behaviour at a time while the playground demonstrates complete named states.
 
 ## Position authoring
 
