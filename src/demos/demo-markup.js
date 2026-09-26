@@ -55,7 +55,10 @@ await placement.transition("inline");`
   "composed-animations": {
     note: "Framework concept: animations are a set, so Slide/Fade/Reveal/Focus/Collapse can be combined.",
     html: `<div id="stage">
-  <div id="card">Card</div>
+  <div id="card">
+    <h3>Readable content</h3>
+    <p>The same text arrives through different composed effects.</p>
+  </div>
 </div>`,
     js: `import {
   animateBetweenStates,
@@ -81,7 +84,10 @@ await animateBetweenStates(card, stage, from, to);`
   geometry: {
     note: "Framework-backed destination geometry: position, size, scale and rotation live in state.",
     html: `<div id="stage">
-  <div id="object"></div>
+  <div id="object">
+    <h3>Destination geometry</h3>
+    <p>Text stays attached while the card moves and resizes.</p>
+  </div>
 </div>`,
     js: `import {
   animateBetweenStates,
@@ -144,8 +150,8 @@ await animateBetweenStates(panel, stage, {}, panelState);`
   "depth-stacking": {
     note: "Depth controls visual softness; z-index remains an explicit, independent destination property.",
     html: `<div id="stage">
-  <div id="back"></div>
-  <div id="front"></div>
+  <div id="back"><p>Lower stack</p></div>
+  <div id="front"><p>Higher stack</p></div>
 </div>`,
     js: `import {
   destinationFrame,
@@ -169,7 +175,10 @@ Object.assign(front.style, destinationFrame(front, stage, sharp));`
   "3d-transforms": {
     note: "Framework-backed single-plane 3D transforms.",
     html: `<div id="stage">
-  <div id="card"></div>
+  <div id="card">
+    <h3>Readable in 3D</h3>
+    <p>Perspective affects the complete component.</p>
+  </div>
 </div>`,
     js: `import {
   animateBetweenStates,
@@ -237,7 +246,10 @@ await animateBetweenStates(card, stage, front, tilted);`
   "blur-focus": {
     note: "Framework-backed depth destinations.",
     html: `<div id="stage">
-  <div id="object"></div>
+  <div id="object">
+    <h3>Primary idea</h3>
+    <p>The text becomes soft or sharp with the card.</p>
+  </div>
 </div>`,
     js: `import {
   animateBetweenStates,
@@ -260,7 +272,10 @@ await animateBetweenStates(object, stage, blurred, focused);`
   size: {
     note: "Framework-backed real width/height interpolation — not just transform scale.",
     html: `<div id="stage">
-  <div id="object"></div>
+  <div id="object">
+    <h3>Real geometry</h3>
+    <p>Text gains room as width and height grow.</p>
+  </div>
 </div>`,
     js: `import {
   animateBetweenStates,
@@ -286,7 +301,10 @@ await animateBetweenStates(object, stage, small, large);`
   rotation: {
     note: "Framework-backed Rotate Z destination geometry.",
     html: `<div id="stage">
-  <div id="object">TOP ↑</div>
+  <div id="object">
+    <strong>TOP ↑</strong>
+    <p>The type rotates with its surface.</p>
+  </div>
 </div>`,
     js: `import {
   animateBetweenStates,
@@ -309,7 +327,10 @@ await animateBetweenStates(object, stage, from, to);`
   "absolute-to-absolute": {
     note: "Framework-backed stage-space transition between two absolute destinations.",
     html: `<div id="stage">
-  <div id="object"></div>
+  <div id="object">
+    <h3>Persistent card</h3>
+    <p>Same content, new absolute destination.</p>
+  </div>
 </div>`,
     js: `import {
   animateBetweenStates,
@@ -338,7 +359,10 @@ await animateBetweenStates(object, stage, a, b);`
   alignment: {
     note: "Framework-backed edge anchors. Change the anchor pair rather than calculating pixel coordinates.",
     html: `<div id="stage">
-  <div id="object"></div>
+  <div id="object">
+    <h3>Anchored</h3>
+    <p>Text moves with the aligned card.</p>
+  </div>
 </div>`,
     js: `import {
   animateBetweenStates,
@@ -482,10 +506,10 @@ inner.animate(
   "stagger-follow": {
     note: "Collection coordination. The same keyframes are reused with an increasing delay.",
     html: `<div id="cards">
-  <article class="card"></article>
-  <article class="card"></article>
-  <article class="card"></article>
-  <article class="card"></article>
+  <article class="card"><h3>Discover</h3><p>First idea.</p></article>
+  <article class="card"><h3>Shape</h3><p>Second idea.</p></article>
+  <article class="card"><h3>Build</h3><p>Third idea.</p></article>
+  <article class="card"><h3>Ship</h3><p>Fourth idea.</p></article>
 </div>`,
     js: `document.querySelectorAll(".card").forEach((card, index) => {
   card.animate(
@@ -505,8 +529,14 @@ inner.animate(
 
   "reveal-collapse": {
     note: "Two independent effects: Reveal uses clipping; Collapse uses directional compression.",
-    html: `<div id="reveal"></div>
-<div id="collapse"></div>`,
+    html: `<div id="reveal">
+  <h3>The same words, two behaviours.</h3>
+  <p>Identical copy makes clipping versus compression visible.</p>
+</div>
+<div id="collapse">
+  <h3>The same words, two behaviours.</h3>
+  <p>Identical copy makes clipping versus compression visible.</p>
+</div>`,
     js: `reveal.animate(
   [
     { clipPath: "inset(0 100% 0 0)" },
@@ -527,7 +557,10 @@ collapse.animate(
   "responsive-placement": {
     note: "Framework-backed responsive geometry: values are percentages of the current containing block.",
     html: `<div id="frame">
-  <div id="object"></div>
+  <div id="object">
+    <h3>24% card</h3>
+    <p>Text stays inside responsive geometry.</p>
+  </div>
 </div>`,
     js: `import {
   animateBetweenStates,
@@ -559,7 +592,9 @@ await animateBetweenStates(object, frame, a, b);`
 
   "reduced-motion": {
     note: "Same semantic destination, different presentation outcome.",
-    html: `<div id="object"></div>`,
+    html: `<div id="object">
+  <strong>Same destination</strong>
+</div>`,
     js: `import {
   animateBetweenStates,
   destinationFrame,

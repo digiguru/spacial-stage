@@ -19,6 +19,6 @@
   <a href="/demos/3d-transforms.html" aria-current="page">3D</a>
 </nav></header>
 <main class="demo-shell"><section class="demo-hero"><div><p class="eyebrow">Spatial transforms</p><h1>One plane can tilt in space.</h1></div><p>Rotate X/Y/Z, Translate Z and Perspective participate in the same state transition model before introducing a full child-layer scene graph.</p></section><section class="demo-panel"><div class="demo-toolbar"><div class="state-buttons"><button class="demo-button is-active" data-state="front">Front</button><button class="demo-button" data-state="tilt">Tilted</button></div><button id="focusedReplay" class="demo-button demo-button-primary">↻ Replay</button></div>
-  <div class="simple-stage" style="perspective:850px"><div id="focusedObject" class="simple-object" style="transform-style:preserve-3d"></div></div>
+  <div class="simple-stage" style="perspective:850px"><div id="focusedObject" class="simple-object" style="transform-style:preserve-3d"><div class="demo-object-copy"><strong>Readable in 3D.</strong><p>The text lives on the same plane, so perspective and rotation affect the complete component.</p></div></div></div>
   <div class="demo-caption"><article><strong>Rotate X/Y</strong><p>Pitch and yaw the whole object in local 3D space.</p></article><article><strong>Translate Z</strong><p>Move toward or away from the viewer independently from z-index.</p></article><article><strong>Perspective</strong><p>Controls camera distance and the strength of spatial distortion.</p></article></div></section></main>
 </body></html>
