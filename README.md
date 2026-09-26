@@ -204,6 +204,8 @@ The playground remains the full authoring environment. The demos landing page is
 - reduced-motion outcomes;
 - 3D transforms, cube spin, parallax and classic Cover Flow.
 
+Each focused demo also shows a **Markup required** reference underneath the visual example. Framework-backed demos show the minimal HTML plus Spacial Stage API setup; experimental browser-only demos show the raw HTML/CSS/WAAPI they currently rely on. The snippets are intentionally smaller than the demo source and include copy controls so the gallery doubles as living documentation.
+
 This keeps the terminology testable one behaviour at a time while the playground demonstrates complete named states.
 
 ## Position authoring
