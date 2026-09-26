@@ -64,17 +64,13 @@ summary:focus-visible {
 .brand-lockup { gap: 13px; }
 .brand-lockup h1 { margin: 0; font-size: clamp(24px,3vw,34px); letter-spacing: -.045em; }
 .brand-mark {
-  position: relative;
+  display: block;
+  flex: 0 0 44px;
   width: 44px;
   height: 44px;
   border-radius: 14px;
-  background: var(--stage);
   box-shadow: 0 8px 24px rgba(15,17,15,.15);
 }
-.brand-mark span { position: absolute; border-radius: 999px; }
-.brand-mark span:nth-child(1) { inset: 8px 15px 22px 8px; background: var(--acid); }
-.brand-mark span:nth-child(2) { inset: 19px 8px 11px 18px; background: var(--lilac); }
-.brand-mark span:nth-child(3) { width: 9px; height: 9px; right: 8px; top: 8px; background: var(--cyan); }
 .topbar-actions { gap: 8px; }
 
 .button {
