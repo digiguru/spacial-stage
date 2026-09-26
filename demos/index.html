@@ -1,46 +1,72 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#171816" />
-    <link rel="icon" href="/brand-mark.svg" type="image/svg+xml" />
-    <link rel="stylesheet" href="/src/demo-pages.css" />
-    <title>Demos · Spacial Stage</title>
-  </head>
-  <body>
-    <header class="demo-topbar">
-      <a class="demo-brand" href="/">
-        <img src="/brand-mark.svg" alt="" width="42" height="42" />
-        <span><small>Spacial Stage</small><strong>Focused demos</strong></span>
-      </a>
-      <nav class="demo-nav" aria-label="Demo navigation">
-        <a href="/">Playground</a>
-        <a href="/demos/" aria-current="page">Demos</a>
-        <a href="/demos/absolute-to-flow.html">Absolute → Flow</a>
-        <a href="/demos/composed-animations.html">Animations</a>
-        <a href="/demos/geometry.html">Geometry</a>
-        <a href="/demos/layout-effects.html">Layout</a>
-        <a href="/demos/depth-stacking.html">Depth</a>
-        <a href="/demos/3d-transforms.html">3D</a>
-      </nav>
-    </header>
-    <main class="demo-shell">
-      <section class="demo-hero">
-        <div>
-          <p class="eyebrow">Examples, one idea at a time</p>
-          <h1>Focused demos.</h1>
-        </div>
-        <p>Use the playground to author complete named states. Use these pages to isolate one part of the framework and see the behaviour without the rest of the inspector around it.</p>
-      </section>
-      <section class="demo-index-grid">
-        <a class="demo-card" href="/demos/absolute-to-flow.html"><span>Core</span><h2>Absolute → Flow</h2><p>Tween one persistent object from absolute stage space into a real inline slot that pushes surrounding content apart.</p></a>
-        <a class="demo-card" href="/demos/composed-animations.html"><span>Motion</span><h2>Composed animations</h2><p>See Slide, Fade, Reveal, Focus and Collapse combine independently rather than acting as mutually exclusive presets.</p></a>
-        <a class="demo-card" href="/demos/geometry.html"><span>Destination</span><h2>Geometry</h2><p>Position, size, anchors, scale and rotation as state-owned destination geometry.</p></a>
-        <a class="demo-card" href="/demos/layout-effects.html"><span>Layout</span><h2>Layout effects</h2><p>Compare Overlay, Push, Replace and Reflow as companion behaviours around an independently animated object.</p></a>
-        <a class="demo-card" href="/demos/depth-stacking.html"><span>Presentation</span><h2>Depth & stacking</h2><p>Keep visual softness separate from explicit z-index and make stacking changes visible.</p></a>
-        <a class="demo-card" href="/demos/3d-transforms.html"><span>Spatial</span><h2>3D transforms</h2><p>Rotate X/Y/Z, Translate Z and Perspective with the same state-to-state interpolation model.</p></a>
-      </section>
-    </main>
-  </body>
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta name="theme-color" content="#171816"/><link rel="icon" href="/brand-mark.svg" type="image/svg+xml"/>
+<link rel="stylesheet" href="/src/demo-pages.css"/>
+<title>Demos · Spacial Stage</title>
+</head>
+<body>
+<header class="demo-topbar">
+  <a class="demo-brand" href="/"><img src="/brand-mark.svg" alt="" width="42" height="42"/><span><small>Spacial Stage</small><strong>Capability demos</strong></span></a>
+  <nav class="demo-nav" aria-label="Demo navigation"><a href="/">Playground</a><a href="/demos/" aria-current="page">All demos</a></nav>
+</header>
+<main class="demo-shell">
+<section class="demo-hero">
+  <div><p class="eyebrow">One behaviour at a time</p><h1>Motion primitives you can actually inspect.</h1></div>
+  <p>The playground combines everything into named states. These demos isolate individual capabilities so timing, layout, depth and placement can be evaluated without the rest of the authoring UI getting in the way.</p>
+</section>
+
+<section class="demo-section">
+  <div class="demo-section-heading"><div><p class="eyebrow">Placement & geometry</p><h2>Where things are</h2></div><p>Position, anchors, layout systems, responsive geometry and how one persistent object moves between them.</p></div>
+  <div class="demo-index-grid dense">
+    <a class="demo-card" href="/demos/absolute-to-flow.html"><span>Core</span><h2>Absolute → Flow</h2><p>A large absolute background object becomes a real inline child while surrounding content moves apart.</p></a>
+    <a class="demo-card" href="/demos/absolute-to-absolute.html"><span>Placement</span><h2>Absolute → Absolute</h2><p>Change anchor, position, size and rotation without leaving stage space.</p></a>
+    <a class="demo-card" href="/demos/alignment.html"><span>Anchors</span><h2>Alignment</h2><p>Top, right, bottom and left edge-aligned destinations resolved against the container.</p></a>
+    <a class="demo-card" href="/demos/size.html"><span>Geometry</span><h2>Size</h2><p>Real width and height interpolation rather than visual scale alone.</p></a>
+    <a class="demo-card" href="/demos/rotation.html"><span>Geometry</span><h2>Rotation</h2><p>Rotate Z as state-owned destination geometry.</p></a>
+    <a class="demo-card" href="/demos/responsive-placement.html"><span>Responsive</span><h2>Responsive placement</h2><p>Percent-based destination geometry recalculated from the real container.</p></a>
+    <a class="demo-card" href="/demos/geometry.html"><span>Combined</span><h2>Geometry overview</h2><p>Position, size, scale and rotation working together in one example.</p></a>
+  </div>
+</section>
+
+<section class="demo-section">
+  <div class="demo-section-heading"><div><p class="eyebrow">Motion & timing</p><h2>How things get there</h2></div><p>Duration, easing and composable arrival effects separated from destination geometry.</p></div>
+  <div class="demo-index-grid dense">
+    <a class="demo-card" href="/demos/easing-curves.html"><span>Timing</span><h2>Animation curves</h2><p>Same duration and distance, four different acceleration profiles.</p></a>
+    <a class="demo-card" href="/demos/speed.html"><span>Timing</span><h2>Speed</h2><p>Same path and curve across 250ms, 500ms, 1000ms and 2000ms.</p></a>
+    <a class="demo-card" href="/demos/composed-animations.html"><span>Composition</span><h2>Composed animations</h2><p>Slide, Fade, Reveal, Focus and Collapse as independent effects.</p></a>
+    <a class="demo-card" href="/demos/reveal-collapse.html"><span>Effects</span><h2>Reveal vs Collapse</h2><p>Clipping and directional compression shown side by side.</p></a>
+  </div>
+</section>
+
+<section class="demo-section">
+  <div class="demo-section-heading"><div><p class="eyebrow">Layout & coordination</p><h2>What happens around the object</h2></div><p>Neighbouring layout, spacing and relationships between several moving elements.</p></div>
+  <div class="demo-index-grid dense">
+    <a class="demo-card" href="/demos/spacing.html"><span>Spacing</span><h2>Padding vs Margin</h2><p>Internal geometry versus external spacing and sibling displacement.</p></a>
+    <a class="demo-card" href="/demos/stagger-follow.html"><span>Coordination</span><h2>Stagger & Follow</h2><p>One shared motion recipe with delayed starts across a collection.</p></a>
+    <a class="demo-card" href="/demos/layout-effects.html"><span>Layout</span><h2>Layout effects</h2><p>Overlay, Push, Replace and Reflow as companion behaviours.</p></a>
+  </div>
+</section>
+
+<section class="demo-section">
+  <div class="demo-section-heading"><div><p class="eyebrow">Depth & accessibility</p><h2>What should feel near, far or calm</h2></div><p>Visual softness, stacking and alternative outcomes for people who prefer less motion.</p></div>
+  <div class="demo-index-grid dense">
+    <a class="demo-card" href="/demos/blur-focus.html"><span>Depth</span><h2>Blur vs Focus</h2><p>Softness, saturation and opacity without implicitly changing geometry or z-index.</p></a>
+    <a class="demo-card" href="/demos/depth-stacking.html"><span>Stacking</span><h2>Depth & stacking</h2><p>Keep visual depth separate from explicit z-index.</p></a>
+    <a class="demo-card" href="/demos/reduced-motion.html"><span>Accessibility</span><h2>Reduced motion</h2><p>Same semantic destination, with full motion or an immediate reduced-motion outcome.</p></a>
+  </div>
+</section>
+
+<section class="demo-section">
+  <div class="demo-section-heading"><div><p class="eyebrow">3D experiments</p><h2>How far can the spatial model go?</h2></div><p>These are intentionally more playful: useful stress tests for transform composition, perspective and eventual layer/group abstractions.</p></div>
+  <div class="demo-index-grid dense">
+    <a class="demo-card" href="/demos/3d-transforms.html"><span>Foundation</span><h2>3D transforms</h2><p>Rotate X/Y/Z, Translate Z and Perspective on a single plane.</p></a>
+    <a class="demo-card" href="/demos/cube-spin.html"><span>3D</span><h2>Cube spin</h2><p>A six-face preserve-3d object group spinning across multiple axes.</p></a>
+    <a class="demo-card" href="/demos/parallax.html"><span>3D</span><h2>Parallax</h2><p>Several planes reacting at different rates to pointer motion and authored sweeps.</p></a>
+    <a class="demo-card" href="/demos/cover-flow.html"><span>3D</span><h2>Cover Flow</h2><p>The classic old-school iTunes perspective carousel.</p></a>
+  </div>
+</section>
+</main>
+</body>
 </html>
