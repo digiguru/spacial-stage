@@ -462,24 +462,44 @@ export function rectRelativeTo(rect, container) {
   };
 }
 
-export function flipFrames(fromRect, toRect) {
+export function flipFrames(
+  fromRect,
+  toRect,
+  {
+    fromRotate = 0,
+    toRotate = 0,
+    origin = "top left"
+  } = {}
+) {
   if (!fromRect || !toRect) return [];
 
   const safeWidth = Math.max(0.0001, toRect.width);
   const safeHeight = Math.max(0.0001, toRect.height);
-  const deltaX = fromRect.left - toRect.left;
-  const deltaY = fromRect.top - toRect.top;
   const scaleX = Math.max(0.0001, fromRect.width / safeWidth);
   const scaleY = Math.max(0.0001, fromRect.height / safeHeight);
+  const useCenter = origin === "center";
+  const deltaX = fromRect.left - toRect.left
+    - (useCenter ? (toRect.width - fromRect.width) / 2 : 0);
+  const deltaY = fromRect.top - toRect.top
+    - (useCenter ? (toRect.height - fromRect.height) / 2 : 0);
+  const transformOrigin = useCenter ? "center center" : "top left";
 
   return [
     {
-      transformOrigin: "top left",
-      transform: `translate3d(${trimNumber(deltaX)}px, ${trimNumber(deltaY)}px, 0) scale(${trimNumber(scaleX)}, ${trimNumber(scaleY)})`
+      transformOrigin,
+      transform: [
+        `translate3d(${trimNumber(deltaX)}px, ${trimNumber(deltaY)}px, 0)`,
+        `scale(${trimNumber(scaleX)}, ${trimNumber(scaleY)})`,
+        `rotate(${trimNumber(fromRotate)}deg)`
+      ].join(" ")
     },
     {
-      transformOrigin: "top left",
-      transform: "translate3d(0px, 0px, 0) scale(1, 1)"
+      transformOrigin,
+      transform: [
+        "translate3d(0px, 0px, 0)",
+        "scale(1, 1)",
+        `rotate(${trimNumber(toRotate)}deg)`
+      ].join(" ")
     }
   ];
 }
@@ -491,12 +511,19 @@ export async function animateFlip(
   {
     duration = 700,
     easing = "cubic-bezier(.2,.82,.24,1)",
-    reducedMotion = prefersReducedMotion()
+    reducedMotion = prefersReducedMotion(),
+    fromRotate = 0,
+    toRotate = 0,
+    origin = "top left"
   } = {}
 ) {
   if (!element || !fromRect || !toRect) return null;
 
-  const frames = flipFrames(fromRect, toRect);
+  const frames = flipFrames(fromRect, toRect, {
+    fromRotate,
+    toRotate,
+    origin
+  });
 
   if (
     reducedMotion
@@ -564,6 +591,401 @@ export async function animateFlowSpace(
   animation.cancel();
   slot.style.height = `${trimNumber(end)}px`;
   return animation;
+}
+
+export function captureLayoutRect(element) {
+  if (!element?.getBoundingClientRect) return null;
+
+  const previousTransform = element.style.transform;
+  const previousTransformOrigin = element.style.transformOrigin;
+
+  element.style.transform = "none";
+  element.style.transformOrigin = "top left";
+
+  const rect = captureRect(element);
+
+  element.style.transform = previousTransform;
+  element.style.transformOrigin = previousTransformOrigin;
+
+  return rect;
+}
+
+export function resolveAbsolutePlacementRect(
+  containerRect,
+  referenceRect,
+  {
+    scale = 1,
+    anchorX = "left",
+    anchorY = "top",
+    offsetX = 0,
+    offsetY = 0
+  } = {}
+) {
+  if (!containerRect || !referenceRect) return null;
+
+  const factor = Math.max(0.0001, finiteNumber(scale, 1));
+  const width = Math.max(0.0001, referenceRect.width * factor);
+  const height = Math.max(0.0001, referenceRect.height * factor);
+
+  const leftByAnchor = {
+    left: containerRect.left,
+    center: containerRect.left + (containerRect.width - width) / 2,
+    right: containerRect.right - width
+  };
+  const topByAnchor = {
+    top: containerRect.top,
+    center: containerRect.top + (containerRect.height - height) / 2,
+    bottom: containerRect.bottom - height
+  };
+
+  return {
+    left: (leftByAnchor[anchorX] ?? leftByAnchor.left)
+      + placementOffset(offsetX, width, containerRect.width),
+    top: (topByAnchor[anchorY] ?? topByAnchor.top)
+      + placementOffset(offsetY, height, containerRect.height),
+    width,
+    height
+  };
+}
+
+export function createPlacementController(
+  element,
+  {
+    placements = {},
+    initial = null,
+    duration = 700,
+    easing = "cubic-bezier(.2,.82,.24,1)",
+    reducedMotion = prefersReducedMotion()
+  } = {}
+) {
+  if (!element) {
+    throw new TypeError("createPlacementController requires an element.");
+  }
+
+  let currentName = null;
+  let running = false;
+
+  function placement(name) {
+    const value = placements[name];
+
+    if (!value) {
+      throw new Error(`Unknown placement "${name}".`);
+    }
+
+    return value;
+  }
+
+  function firstAbsoluteContainer() {
+    return Object.values(placements)
+      .find((value) => value?.type === "absolute" && value.container)
+      ?.container || null;
+  }
+
+  function prepareSlot(spec) {
+    if (!spec?.slot) {
+      throw new TypeError("Flow placement requires a slot element.");
+    }
+
+    const alignment = {
+      left: "flex-start",
+      center: "center",
+      right: "flex-end",
+      stretch: "stretch"
+    }[spec.align || "center"] || "center";
+
+    Object.assign(spec.slot.style, {
+      display: "flex",
+      flexDirection: "column",
+      alignItems: alignment,
+      overflow: spec.overflow || "visible"
+    });
+  }
+
+  function flowStyle(spec) {
+    const gapBefore = Math.max(0, finiteNumber(spec.gapBefore, 0));
+    const gapAfter = Math.max(0, finiteNumber(spec.gapAfter, 0));
+
+    return {
+      position: "relative",
+      left: "auto",
+      top: "auto",
+      right: "auto",
+      bottom: "auto",
+      margin: `${trimNumber(gapBefore)}px 0 ${trimNumber(gapAfter)}px`,
+      transform: "none",
+      transformOrigin: spec.transformOrigin || "center center",
+      flex: "0 0 auto",
+      ...(spec.style || {})
+    };
+  }
+
+  function measurementClone(spec) {
+    prepareSlot(spec);
+
+    const clone = element.cloneNode(true);
+    clone.removeAttribute("id");
+    clone.querySelectorAll?.("[id]").forEach((node) => node.removeAttribute("id"));
+
+    Object.assign(clone.style, flowStyle(spec), {
+      visibility: "hidden",
+      pointerEvents: "none",
+      transition: "none",
+      animation: "none"
+    });
+
+    spec.slot.append(clone);
+    return clone;
+  }
+
+  function measureFlow(name, spec) {
+    const clone = measurementClone(spec);
+
+    try {
+      const rect = captureLayoutRect(clone);
+      const layoutHeight = clone.offsetHeight || rect?.height || 0;
+      const gapBefore = Math.max(0, finiteNumber(spec.gapBefore, 0));
+      const gapAfter = Math.max(0, finiteNumber(spec.gapAfter, 0));
+
+      return {
+        name,
+        type: "flow",
+        rect,
+        slot: spec.slot,
+        slotHeight: gapBefore + layoutHeight + gapAfter,
+        collapsedHeight: Math.max(0, finiteNumber(spec.collapsedHeight, 0)),
+        rotateZ: finiteNumber(spec.rotateZ, 0),
+        spec
+      };
+    } finally {
+      clone.remove();
+    }
+  }
+
+  function measure(name, visited = new Set()) {
+    if (visited.has(name)) {
+      throw new Error(`Placement "${name}" contains a circular size reference.`);
+    }
+
+    visited.add(name);
+    const spec = placement(name);
+
+    if (spec.type === "flow") {
+      return measureFlow(name, spec);
+    }
+
+    if (spec.type !== "absolute") {
+      throw new Error(`Unsupported placement type "${spec.type}".`);
+    }
+
+    if (!spec.container) {
+      throw new TypeError("Absolute placement requires a container element.");
+    }
+
+    const referenceName = spec.sizeFrom || Object.keys(placements)
+      .find((candidate) => placements[candidate]?.type === "flow");
+    const reference = referenceName
+      ? measure(referenceName, new Set(visited))
+      : {
+          rect: captureLayoutRect(element)
+        };
+    const containerRect = captureRect(spec.container);
+    const rect = resolveAbsolutePlacementRect(
+      containerRect,
+      reference.rect,
+      spec
+    );
+
+    return {
+      name,
+      type: "absolute",
+      rect,
+      container: spec.container,
+      rotateZ: finiteNumber(spec.rotateZ, 0),
+      spec
+    };
+  }
+
+  function absoluteOffsets(container, rect) {
+    const containerRect = captureRect(container);
+    const clientLeft = finiteNumber(container.clientLeft, 0);
+    const clientTop = finiteNumber(container.clientTop, 0);
+    const scrollLeft = finiteNumber(container.scrollLeft, 0);
+    const scrollTop = finiteNumber(container.scrollTop, 0);
+
+    return {
+      left: rect.left - containerRect.left - clientLeft + scrollLeft,
+      top: rect.top - containerRect.top - clientTop + scrollTop
+    };
+  }
+
+  function applyAbsolute(measured) {
+    const { spec, rect, container } = measured;
+    const offsets = absoluteOffsets(container, rect);
+
+    container.append(element);
+    Object.assign(element.style, {
+      position: "absolute",
+      left: `${trimNumber(offsets.left)}px`,
+      top: `${trimNumber(offsets.top)}px`,
+      right: "auto",
+      bottom: "auto",
+      width: `${trimNumber(rect.width)}px`,
+      height: `${trimNumber(rect.height)}px`,
+      margin: "0",
+      transform: "none",
+      transformOrigin: spec.transformOrigin || "center center",
+      ...(spec.style || {})
+    });
+  }
+
+  function applyFlow(measured) {
+    const { spec, slot, slotHeight } = measured;
+    prepareSlot(spec);
+    slot.style.height = `${trimNumber(slotHeight)}px`;
+    slot.append(element);
+    Object.assign(element.style, flowStyle(spec));
+  }
+
+  function collapseOtherFlowSlots(activeName = null) {
+    for (const [name, spec] of Object.entries(placements)) {
+      if (name === activeName || spec?.type !== "flow" || !spec.slot) continue;
+      spec.slot.style.height = `${trimNumber(
+        Math.max(0, finiteNumber(spec.collapsedHeight, 0))
+      )}px`;
+    }
+  }
+
+  function apply(name) {
+    const measured = measure(name);
+
+    if (measured.type === "flow") {
+      applyFlow(measured);
+    } else {
+      applyAbsolute(measured);
+      collapseOtherFlowSlots();
+    }
+
+    currentName = name;
+    return measured;
+  }
+
+  async function transition(name) {
+    if (running || name === currentName) return null;
+
+    const target = measure(name);
+    const sourceName = currentName;
+    const source = sourceName ? measure(sourceName) : null;
+    const fromRect = captureLayoutRect(element);
+    const fromRotate = source?.rotateZ || 0;
+    const toRotate = target.rotateZ || 0;
+    const jobs = [];
+
+    running = true;
+
+    try {
+      if (target.type === "flow") {
+        const overlayContainer =
+          source?.type === "absolute"
+            ? source.container
+            : firstAbsoluteContainer();
+
+        if (!overlayContainer) {
+          throw new Error("A flow transition requires an absolute overlay container.");
+        }
+
+        const overlayMeasured = {
+          ...target,
+          type: "absolute",
+          container: overlayContainer,
+          spec: {
+            ...target.spec,
+            container: overlayContainer,
+            style: target.spec.overlayStyle || {}
+          }
+        };
+
+        applyAbsolute(overlayMeasured);
+
+        jobs.push(
+          animateFlowSpace(
+            target.slot,
+            target.slot.getBoundingClientRect().height,
+            target.slotHeight,
+            { duration, easing, reducedMotion }
+          )
+        );
+      } else {
+        applyAbsolute(target);
+      }
+
+      if (source?.type === "flow" && source.slot !== target.slot) {
+        jobs.push(
+          animateFlowSpace(
+            source.slot,
+            source.slot.getBoundingClientRect().height,
+            source.collapsedHeight,
+            { duration, easing, reducedMotion }
+          )
+        );
+      }
+
+      jobs.push(
+        animateFlip(element, fromRect, target.rect, {
+          duration,
+          easing,
+          reducedMotion,
+          fromRotate,
+          toRotate,
+          origin: "center"
+        })
+      );
+
+      await Promise.all(jobs);
+
+      if (target.type === "flow") {
+        applyFlow(target);
+        collapseOtherFlowSlots(name);
+      } else {
+        applyAbsolute(target);
+        collapseOtherFlowSlots();
+      }
+
+      currentName = name;
+      return target;
+    } finally {
+      running = false;
+    }
+  }
+
+  const controller = {
+    apply,
+    transition,
+    measure,
+    get current() {
+      return currentName;
+    },
+    get running() {
+      return running;
+    }
+  };
+
+  if (initial) {
+    apply(initial);
+  }
+
+  return controller;
+}
+
+function placementOffset(value, selfSize, containerSize) {
+  if (value && typeof value === "object") {
+    const amount = finiteNumber(value.value, 0);
+
+    if (value.relativeTo === "self") return selfSize * amount;
+    if (value.relativeTo === "container") return containerSize * amount;
+    return amount;
+  }
+
+  return finiteNumber(value, 0);
 }
 
 export function applyFrame(element, frame) {
