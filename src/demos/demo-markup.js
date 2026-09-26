@@ -590,6 +590,60 @@ const b = normaliseSpec({
 await animateBetweenStates(object, frame, a, b);`
   },
 
+  "depth-of-field": {
+    note: "Experimental renderer using framework focus-profile math. One tilted DOM card is duplicated into narrow clipped strips so each local depth can receive a different blur.",
+    html: `<div id="scene">
+  <div id="card">
+    <div id="slices"></div>
+  </div>
+</div>
+
+<input id="focusPlane" type="range" min="-1" max="1" step="0.01">
+<input id="focusArea" type="range" min="0.04" max="1.2" step="0.01">`,
+    js: `import { resolveDepthOfField } from "@digiguru/spacial-stage";
+
+const count = 28;
+const yaw = 58;
+const focusDepth = 0;
+const focusArea = 0.24;
+const maxBlur = 14;
+const depthScale = Math.sin(yaw * Math.PI / 180);
+
+for (let index = 0; index < count; index += 1) {
+  const slice = card.cloneNode(true);
+  const start = index / count * 100;
+  const end = (index + 1) / count * 100;
+  const x = ((index + .5) / count) * 2 - 1;
+  const depth = -x * depthScale;
+
+  const { blur } = resolveDepthOfField({
+    depth,
+    focusDepth,
+    focusArea,
+    maxBlur
+  });
+
+  slice.style.clipPath =
+    \`inset(0 \${100 - end}% 0 \${start}%)\`;
+  slice.style.filter = \`blur(\${blur}px)\`;
+  slices.append(slice);
+}
+
+scene.style.perspective = "850px";
+card.style.transform = "rotateX(-11deg) rotateY(58deg)";`,
+    css: `#scene {
+  perspective: 850px;
+}
+#card {
+  position: relative;
+  transform-style: preserve-3d;
+}
+#slices > * {
+  position: absolute;
+  inset: 0;
+}`
+  },
+
   "reduced-motion": {
     note: "Both cards share the same semantic state. Full motion tweens to the selected destination; reduced motion commits that destination immediately.",
     html: `<button data-state="one">State 1</button>
