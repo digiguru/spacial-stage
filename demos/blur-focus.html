@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta name="theme-color" content="#171816"/><link rel="icon" href="/brand-mark.svg" type="image/svg+xml"/>
+<link rel="stylesheet" href="/src/demo-pages.css"/>
+<title>Blur vs focus · Spacial Stage</title><script type="module" src="/src/demos/labs.js"></script>
+</head>
+<body data-demo="blur-focus">
+<header class="demo-topbar"><a class="demo-brand" href="/"><img src="/brand-mark.svg" alt="" width="42" height="42"/><span><small>Spacial Stage</small><strong>Blur vs focus</strong></span></a><nav class="demo-nav" aria-label="Demo navigation">
+  <a href="/">Playground</a>
+  <a href="/demos/">All demos</a>
+</nav></header>
+<main class="demo-shell">
+<section class="demo-hero"><div><p class="eyebrow">Depth</p><h1>Softness and focus are destinations.</h1></div><p>Depth affects blur, saturation and opacity without implicitly changing stacking or geometry.</p></section>
+<section class="demo-panel">
+<div class="demo-toolbar"><p class="lab-note">The left object recedes while the right object resolves into focus.</p><button class="demo-button demo-button-primary" data-replay>↻ Replay</button></div>
+<div class="lab-stage lab-grid-2" data-lab-stage>
+ <div class="lab-cell"><h3>Blur</h3><p>Recedes through softness, desaturation and opacity.</p><div id="blurredObject" class="lab-object" style="margin:70px auto 0"></div></div>
+ <div class="lab-cell"><h3>Focus</h3><p>Resolves from soft to sharp without changing z-index.</p><div id="focusedObject" class="lab-object" style="margin:70px auto 0"></div></div>
+ </div>
+
+</section>
+</main></body></html>
