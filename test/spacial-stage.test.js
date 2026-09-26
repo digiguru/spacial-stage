@@ -6,6 +6,7 @@ import {
   cssForParent,
   flipFrames,
   layoutCompanionFrames,
+  resolveAbsolutePlacementRect,
   normaliseSpec,
   positionValuesForCoordinates,
   resolveDepth,
@@ -32,6 +33,38 @@ test("FLIP frames map a source rectangle onto a destination rectangle", () => {
     frames[1].transform,
     "translate3d(0px, 0px, 0) scale(1, 1)"
   );
+});
+
+test("FLIP frames can interpolate rotation around the centre", () => {
+  const frames = flipFrames(
+    { left: -200, top: 20, width: 600, height: 600 },
+    { left: 200, top: 180, width: 200, height: 200 },
+    { fromRotate: -90, toRotate: 0, origin: "center" }
+  );
+
+  assert.equal(frames[0].transformOrigin, "center center");
+  assert.match(frames[0].transform, /scale\(3, 3\)/);
+  assert.match(frames[0].transform, /rotate\(-90deg\)/);
+  assert.match(frames[1].transform, /rotate\(0deg\)/);
+});
+
+test("absolute placement can scale from a browser-measured reference and offset by self/container", () => {
+  const rect = resolveAbsolutePlacementRect(
+    { left: 100, top: 50, right: 1100, bottom: 650, width: 1000, height: 600 },
+    { left: 400, top: 200, width: 200, height: 200 },
+    {
+      scale: 3,
+      anchorX: "left",
+      anchorY: "top",
+      offsetX: { value: -0.38, relativeTo: "self" },
+      offsetY: { value: 0.03, relativeTo: "container" }
+    }
+  );
+
+  assert.equal(rect.width, 600);
+  assert.equal(rect.height, 600);
+  assert.equal(rect.left, -128);
+  assert.equal(rect.top, 68);
 });
 
 test("normalises named-state specs including anchored position and custom vector", () => {
