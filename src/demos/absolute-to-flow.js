@@ -45,8 +45,13 @@ const placement = createPlacementController(svgObject, {
 });
 
 function updateButtons() {
-  stateBackground.classList.toggle("is-active", placement.current === "background");
-  stateInline.classList.toggle("is-active", placement.current === "inline");
+  const backgroundActive = placement.current === "background";
+  const inlineActive = placement.current === "inline";
+
+  stateBackground.classList.toggle("is-active", backgroundActive);
+  stateInline.classList.toggle("is-active", inlineActive);
+  stateBackground.setAttribute("aria-pressed", String(backgroundActive));
+  stateInline.setAttribute("aria-pressed", String(inlineActive));
 }
 
 async function goTo(name, { animate = true } = {}) {
