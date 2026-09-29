@@ -1,13 +1,28 @@
 {
   "name": "@digiguru/spacial-stage",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "type": "module",
   "description": "A framework-neutral motion grammar and playground for spatial interfaces.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/digiguru/spacial-stage.git"
+  },
+  "homepage": "https://github.com/digiguru/spacial-stage#readme",
+  "bugs": {
+    "url": "https://github.com/digiguru/spacial-stage/issues"
+  },
+  "license": "MIT",
+  "author": "Adam Hall (@digiguru)",
+  "publishConfig": {
+    "access": "public"
+  },
   "exports": {
     ".": "./src/spacial-stage.js"
   },
   "files": [
-    "src/spacial-stage.js"
+    "src/spacial-stage.js",
+    "README.md",
+    "LICENSE"
   ],
   "sideEffects": false,
   "scripts": {
@@ -15,11 +30,21 @@
     "build": "vite build",
     "preview": "vite preview",
     "test": "node --test test/*.test.js",
-    "check": "node --check src/spacial-stage.js && node --check src/demo.js && node --check src/demos/absolute-to-flow.js && node --check src/demos/focused.js && node --check src/demos/labs.js && node --check src/demos/demo-markup.js && node --check src/demos/depth-of-field.js"
+    "check": "node --check src/spacial-stage.js && node --check src/demo.js && node --check src/demos/absolute-to-flow.js && node --check src/demos/focused.js && node --check src/demos/labs.js && node --check src/demos/demo-markup.js && node --check src/demos/depth-of-field.js",
+    "prepublishOnly": "npm run check && npm test"
   },
   "engines": {
     "node": ">=24"
   },
+  "keywords": [
+    "animation",
+    "layout",
+    "motion",
+    "spatial",
+    "transition",
+    "flip",
+    "web-animation"
+  ],
   "devDependencies": {
     "vite": "^7.1.7"
   }
