@@ -502,4 +502,10 @@ import {
 } from "@digiguru/spacial-stage";
 ```
 
-The package metadata is ready for consumption, but no npm publication decision has been made yet.
+Install from npm:
+
+```bash
+npm install @digiguru/spacial-stage
+```
+
+Releases follow semantic versioning. The version in `package.json` is authoritative. Publishing is performed by `.github/workflows/publish.yml` using npm trusted publishing (OIDC); a release tag must exactly match the package version (for example, `v0.1.1`). The workflow runs checks and tests, previews the tarball with `npm pack --dry-run`, then publishes the public package.
